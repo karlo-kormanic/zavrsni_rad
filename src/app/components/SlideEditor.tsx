@@ -1,5 +1,5 @@
 import NoteArea from "./NoteArea";
-import QuestionEditor from "./QuestionEditor";
+import SlideQuestionArea from "./SlideQuestionArea";
 import QuizHeader from "./QuizHeader";
 
 const SlideEditor = () => {
@@ -7,7 +7,7 @@ const SlideEditor = () => {
         <div className="h-[76vh] col-span-14 bg-white border border-gray-300">
             <QuizHeader/>
             <div className="grid grid-rows-2 p-3 gap-3">
-                <QuestionEditor/>
+                <SlideQuestionArea/>
                 <NoteArea/>
             </div>
         </div>

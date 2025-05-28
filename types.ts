@@ -1,0 +1,1 @@
+export type OptionPrefixPattern = (index: number) => string;

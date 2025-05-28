@@ -1,69 +1,85 @@
 'use client';
+import { useState, useEffect } from 'react';
+import type { OptionPrefixPattern } from '@/../../types';
 
-import { useState } from 'react';
-import QuestionTypeDropdown from './QuestionTypeDropdown';
-import QuestionPrompt from './QuestionPrompt';
-import MultipleChoice from './MultipleChoice';
-
-const QuestionEditor = () => {
-
-    const [questionType, setQuestionType] = useState<string | null>(null);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [mcOptions, setMcOptions] = useState<string[]>([]);
-
-    const questionTypes = [
-        {value: 'multiple_choice', label: 'Multiple Choice'},
-        {value: 'checkbox', label: 'Checkbox'},
-        {value: 'scale', label: 'Scale'},
-    ]
-
-    const handleTypeChange = (selectedValue: string) => {
-        setQuestionType(selectedValue);
-    }
-
-    return (
-        //TODO add question window expansion on new line in type your question...
-        //TODO add data persistence (until hard refresh) -> should I even do this if db saving fixes this problem?
-        //TODO change saves to lower the amount of db calls, onChange -> onBlur
-        <div className="relative h-[55vh] row-span-1 bg-white border border-gray-300 p-4">
-            {/* Top row - question and type selector */}
-            <div className="flex justify-between mb-6">
-                <div className="w-1/2 pr-2">
-                    <QuestionPrompt
-                        onSave={() => {
-                            console.log("Question saved.")
-                        }}
-                    />
-                </div>
-                <div className="w-1/2 pl-2">
-                    <QuestionTypeDropdown
-                        options={questionTypes} 
-                        selectedValue={questionType}
-                        onChange={handleTypeChange}
-                        placeholder="Question Type"   
-                    />
-                </div>
-            </div>
-
-            {/* Middle content - dynamic based on question type */}
-            <div className="mb-6">
-                {questionType === 'multiple_choice' && (
-                    <div className="w-full">
-                        <MultipleChoice onUpdate={setMcOptions} />
-                    </div>
-                )}
-            </div>
-
-            {/* Bottom - answer hint */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                <a className="text-sm font-medium text-indigo-600 focus:ring-3 focus:outline-none" href="#">
-                    <span className="relative block border border-current bg-white px-8 py-3">
-                        The answer to question 3 is...
-                    </span>
-                </a>
-            </div>
-        </div>
-    )
+interface EditorProps {
+  initialOptions?: string[];
+  onUpdate: (options: string[]) => void;
+  optionPrefixPattern?: OptionPrefixPattern;
 }
 
-export default QuestionEditor;
+interface OptionInputProps {
+  index: number;
+  option: string;
+  prefix: string;
+  onChange: (value: string) => void;
+}
+
+interface AddOptionButtonProps {
+  onClick: () => void;
+}
+
+const OptionInput = ({ index, option, prefix, onChange }: OptionInputProps) => (
+  <div className="flex items-center gap-2">
+    <span className="w-6 text-gray-500 font-medium">{prefix}</span>
+    <input
+      type="text"
+      value={option}
+      onChange={(e) => onChange(e.target.value)}
+      className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-transparent"
+      placeholder={`Option ${index + 1}`}
+    />
+  </div>
+);
+
+const AddOptionButton = ({ onClick }: AddOptionButtonProps) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="mt-3 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+  >
+    + Add Option
+  </button>
+);
+
+export function QuestionEditor({
+  initialOptions = ['', '', '', ''],
+  onUpdate,
+  optionPrefixPattern = (index) => `${String.fromCharCode(97 + index)})`,
+}: EditorProps) {
+  const [options, setOptions] = useState<string[]>(initialOptions);
+
+  const handleChange = (index: number, value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    setOptions(newOptions);
+  };
+
+  const addOption = () => {
+    setOptions([...options, '']);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onUpdate(options.filter(opt => opt.trim() !== ''));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [options, onUpdate]);
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3">
+        {options.map((option, index) => (
+          <OptionInput
+            key={index}
+            index={index}
+            option={option}
+            prefix={optionPrefixPattern(index)}
+            onChange={(value) => handleChange(index, value)}
+          />
+        ))}
+      </div>
+      <AddOptionButton onClick={addOption} />
+    </>
+  );
+}
