@@ -1,14 +1,14 @@
 'use client';
-import { useState } from 'react';
-import QuestionTypeDropdown from './QuestionTypeDropdown';
+import { useState, useEffect } from 'react';
 import QuestionPrompt from './QuestionPrompt';
-import { QuestionEditor } from './QuestionEditor';
+import QuestionTypeDropdown from './QuestionTypeDropdown';
+import { AnswerEditor } from './AnswerEditor';
 import { AnswerSelector } from './AnswerSelector';
 
 const SlideQuestionArea = () => {
-    const [questionType, setQuestionType] = useState<string>('multiple_choice'); // Default to first type
-    const [options, setOptions] = useState(['', '', '']);
-    const [answer, setAnswer] = useState('');
+    const [questionType, setQuestionType] = useState<string>('multiple_choice');
+    const [options, setOptions] = useState<string[]>(['', '', '', '']);
+    const [answer, setAnswer] = useState<string>('');
 
     const questionTypes = [
         {value: 'multiple_choice', label: 'Multiple Choice'},
@@ -16,22 +16,32 @@ const SlideQuestionArea = () => {
         {value: 'scale', label: 'Scale'},
     ];
 
+    useEffect(() => {
+        if (questionType === 'scale') {
+            // For scale questions, ensure 6 options
+            setOptions(prev => {
+                const newOptions = [...prev];
+                while (newOptions.length < 6) newOptions.push('');
+                while (newOptions.length > 6) newOptions.pop();
+                return newOptions;
+            });
+        } else {
+            // For other types, ensure 4 options
+            setOptions(prev => {
+                const newOptions = [...prev];
+                while (newOptions.length < 4) newOptions.push('');
+                while (newOptions.length > 4) newOptions.pop();
+                return newOptions;
+            });
+        }
+    }, [questionType]);
+
     const handleTypeChange = (selectedValue: string) => {
         setQuestionType(selectedValue);
-        // Reset options when type changes
-        setOptions(selectedValue === 'scale' 
-            ? ['', '', '', '', '', ''] 
-            : ['', '', '']
-        );
+        // Don't reset options here - let useEffect handle it
         setAnswer('');
     };
 
-    //TODO add question window expansion on new line in type your question...
-    //TODO add data persistence (until hard refresh) -> should I even do this if db saving fixes this problem?
-    //TODO change saves to lower the amount of db calls, onChange -> onBlur
-    //TODO browse the files and change local import path to global
-    //TODO browse the files and unify export default function look
-    //TODO change the answer is button into dropdown that loads the answers and lets user pick 1, pick multiple or adjust the order
     return (
         <div className="relative h-[55vh] row-span-1 bg-white border border-gray-300 p-4">
             {/* Top row - question and type selector */}
@@ -54,7 +64,7 @@ const SlideQuestionArea = () => {
             {/* Middle content */}
             <div className="mb-6">
                 <div className="w-full">
-                    <QuestionEditor
+                    <AnswerEditor
                         initialOptions={options}
                         onUpdate={setOptions}
                         optionPrefixPattern={
@@ -63,7 +73,8 @@ const SlideQuestionArea = () => {
                                 : undefined
                         }
                     />
-                    {options.some(opt => opt.trim() !== '') && (
+                    {/* Show selector if any option is non-empty */}
+                    {options.filter(opt => opt.trim() !== '').length > 0 && (
                         <AnswerSelector
                             options={options} 
                             selectedAnswer={answer} 
@@ -72,17 +83,15 @@ const SlideQuestionArea = () => {
                     )}
                 </div>
             </div>
-
-            {/* Bottom - answer hint */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                <a className="text-sm font-medium text-indigo-600 focus:outline-none" href="#">
-                    <span className="relative block border border-current bg-white px-8 py-3">
-                        The answer to question 3 is...
-                    </span>
-                </a>
-            </div>
         </div>
     );
 };
 
 export default SlideQuestionArea;
+
+//TODO add question window expansion on new line in type your question...
+//TODO add data persistence (until hard refresh) -> should I even do this if db saving fixes this problem?
+//TODO change saves to lower the amount of db calls, onChange -> onBlur
+//TODO browse the files and change local import path to global
+//TODO browse the files and unify export default function look
+//TODO change the answer is button into dropdown that loads the answers and lets user pick 1, pick multiple or adjust the order

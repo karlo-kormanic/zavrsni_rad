@@ -1,9 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
 import type { OptionPrefixPattern } from '@/../../types';
 
 interface EditorProps {
-  initialOptions?: string[];
+  initialOptions: string[];
   onUpdate: (options: string[]) => void;
   optionPrefixPattern?: OptionPrefixPattern;
 }
@@ -42,34 +41,25 @@ const AddOptionButton = ({ onClick }: AddOptionButtonProps) => (
   </button>
 );
 
-export function QuestionEditor({
-  initialOptions = ['', '', '', ''],
+export function AnswerEditor({
+  initialOptions,
   onUpdate,
   optionPrefixPattern = (index) => `${String.fromCharCode(97 + index)})`,
 }: EditorProps) {
-  const [options, setOptions] = useState<string[]>(initialOptions);
-
   const handleChange = (index: number, value: string) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
+    const updated = [...initialOptions];
+    updated[index] = value;
+    onUpdate(updated);
   };
 
   const addOption = () => {
-    setOptions([...options, '']);
+    onUpdate([...initialOptions, '']);
   };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onUpdate(options.filter(opt => opt.trim() !== ''));
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [options, onUpdate]);
 
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
-        {options.map((option, index) => (
+        {initialOptions.map((option, index) => (
           <OptionInput
             key={index}
             index={index}

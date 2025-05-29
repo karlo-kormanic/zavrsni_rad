@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 interface DropdownProps {
   options: { value: string; label: string }[];
-  selectedValue: string | null;
+  selectedValue: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
@@ -19,9 +19,7 @@ export default function QuestionTypeDropdown({
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const selectedOption = selectedValue
-    ?options.find(opt => opt.value === selectedValue)?.label
-    :placeholder;
+  const selectedOption = options.find(opt => opt.value === selectedValue)?.label || placeholder;
 
   return (
     <div className={`relative ${className}`}>

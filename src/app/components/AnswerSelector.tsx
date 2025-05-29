@@ -21,7 +21,7 @@ export function AnswerSelector({
   return (
     <div className="mt-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        Correct Answer
+        Correct Answer:
       </label>
       <select
         value={selectedAnswer}
