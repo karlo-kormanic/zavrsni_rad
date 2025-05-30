@@ -9,6 +9,7 @@ const SlideQuestionArea = () => {
     const [questionType, setQuestionType] = useState<string>('multiple_choice');
     const [options, setOptions] = useState<string[]>(['', '', '', '']);
     const [answer, setAnswer] = useState<string>('');
+    const [answers, setAnswers] = useState<string[]>([]);
 
     const questionTypes = [
         {value: 'multiple_choice', label: 'Multiple Choice'},
@@ -77,8 +78,21 @@ const SlideQuestionArea = () => {
                     {options.filter(opt => opt.trim() !== '').length > 0 && (
                         <AnswerSelector
                             options={options} 
-                            selectedAnswer={answer} 
-                            onSelect={setAnswer}
+                            selectedAnswer={answer}
+                            selectedAnswers={answers}
+                            onSelect={(option) => {
+                                if (questionType === 'checkbox') {
+                                setAnswers(option as string[]);
+                                } else {
+                                setAnswer(option as string);
+                                }
+                            }}
+                            optionPrefixPattern={
+                            questionType === 'scale' 
+                                ? (index) => `${index + 1}.`
+                                : undefined
+                            }
+                            multiSelect={questionType === 'checkbox'}
                         />
                     )}
                 </div>
@@ -90,7 +104,6 @@ const SlideQuestionArea = () => {
 export default SlideQuestionArea;
 
 //TODO add question window expansion on new line in type your question...
-//TODO add data persistence (until hard refresh) -> should I even do this if db saving fixes this problem?
 //TODO change saves to lower the amount of db calls, onChange -> onBlur
 //TODO browse the files and change local import path to global
 //TODO browse the files and unify export default function look
