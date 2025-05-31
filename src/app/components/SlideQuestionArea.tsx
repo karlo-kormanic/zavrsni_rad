@@ -85,7 +85,7 @@ const SlideQuestionArea = () => {
 
 export default SlideQuestionArea;
 //TODO add question window expansion on new line in type your question...
+//TODO add scroll when answers would go out of screen at the bottom
 //TODO change saves to lower the amount of db calls, onChange -> onBlur
 //TODO browse the files and change local import path to global
 //TODO browse the files and unify export default function look
-//TODO change the answer is button into dropdown that loads the answers and lets user pick 1, pick multiple or adjust the order

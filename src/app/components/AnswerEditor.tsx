@@ -18,6 +18,10 @@ interface AddOptionButtonProps {
   onClick: () => void;
 }
 
+interface RemoveOptionButtonProps {
+  onClick: () => void;
+}
+
 const OptionInput = ({ index, option, prefix, onChange }: OptionInputProps) => (
   <div className="flex items-center gap-2">
     <span className="w-6 text-gray-500 font-medium">{prefix}</span>
@@ -37,7 +41,17 @@ const AddOptionButton = ({ onClick }: AddOptionButtonProps) => (
     onClick={onClick}
     className="mt-3 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
   >
-    + Add Option
+    + Add New Option
+  </button>
+);
+
+const RemoveOptionButton = ({ onClick }: RemoveOptionButtonProps) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="mt-3 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+  >
+    + Remove Last Option
   </button>
 );
 
@@ -56,6 +70,11 @@ export function AnswerEditor({
     onUpdate([...initialOptions, '']);
   };
 
+  const removeOption = () => {
+    if (initialOptions.length === 0) return;
+    onUpdate(initialOptions.slice(0, -1));
+  }
+
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
@@ -69,7 +88,10 @@ export function AnswerEditor({
           />
         ))}
       </div>
-      <AddOptionButton onClick={addOption} />
+      <div className="flex mt-3 gap-5">
+        <AddOptionButton onClick={addOption} />
+        <RemoveOptionButton onClick={removeOption} />
+      </div>
     </>
   );
 }
