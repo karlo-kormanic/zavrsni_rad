@@ -1,73 +1,122 @@
 'use client';
+import { DndContext, closestCenter, useSensors, useSensor, PointerSensor, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import type { OptionPrefixPattern } from '@/../../types';
 
 interface SelectorProps {
   options: string[];
   selectedAnswer: string;
-  selectedAnswers?: string[];
-  onSelect: (answerOrAnswers: string | string[]) => void;
+  selectedAnswers: string[];
+  onSelect: (value: string | string[]) => void;
+  onReorder?: (newOptions: string[]) => void;
+  isMultiSelect?: boolean;
+  isSortable?: boolean;
   optionPrefixPattern?: OptionPrefixPattern;
-  multiSelect?: boolean;
 }
+
+const SortableItem = ({
+  id,
+  option,
+  prefix,
+}: {
+  id: number;
+  option: string;
+  prefix: string;
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="cursor-move p-2 border rounded bg-white mb-1"
+    >
+      {prefix} {option}
+    </li>
+  );
+};
 
 export function AnswerSelector({
   options,
-  selectedAnswer = '',
-  selectedAnswers = [],
+  selectedAnswer,
+  selectedAnswers,
   onSelect,
+  onReorder,
+  isMultiSelect = false,
+  isSortable = false,
   optionPrefixPattern = (index) => `${String.fromCharCode(97 + index)})`,
-  multiSelect = false,
 }: SelectorProps) {
-  const hasAtLeastOneNonEmpty = options.some(opt => opt.trim() !== '');
-  if (!hasAtLeastOneNonEmpty) return null;
+  const sensors = useSensors(useSensor(PointerSensor));
 
-  if (multiSelect) {
-    const handleToggle = (value: string) => {
-      const updated = selectedAnswers.includes(value)
-        ? selectedAnswers.filter((v) => v !== value)
-        : [...selectedAnswers, value];
-      onSelect(updated);
-    };
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const oldIndex = Number(active.id);
+    const newIndex = Number(over.id);
+    if (oldIndex !== newIndex) {
+      const reordered = arrayMove(options, oldIndex, newIndex);
+      onReorder?.(reordered);
+    }
+  };
 
-    return (
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Correct Answers:
-        </label>
-        <div className="space-y-2">
-          {options.map((option, index) => (
-            <label key={index} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={selectedAnswers.includes(option)}
-                onChange={() => handleToggle(option)}
-                className="form-checkbox h-4 w-4 text-blue-600"
-              />
-              <span>{optionPrefixPattern(index)} {option || '[empty]'}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  
+  if (options.length === 0) return null;
+
   return (
     <div className="mt-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        Correct Answer:
+        {isSortable ? 'Reorder Answers:' : 'Correct Answer:'}
       </label>
-      <select
-        value={selectedAnswer}
-        onChange={(e) => onSelect(e.target.value)}
-        className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-      >
-        <option value="">Select answer...</option>
-        {options.map((option, index) => (
-          <option key={index} value={option}>
-            {optionPrefixPattern(index)} {option}
-          </option>
-        ))}
-      </select>
+
+      {isSortable ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={options.map((_, idx) => idx)} strategy={verticalListSortingStrategy}>
+            <ul>
+              {options.map((opt, index) => (
+                <SortableItem key={index} id={index} option={opt} prefix={optionPrefixPattern(index)} />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
+      ) : isMultiSelect ? (
+        <div className="space-y-2">
+          {options.map((opt, index) => (
+            <label key={index} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={selectedAnswers.includes(opt)}
+                onChange={(e) => {
+                  const updated = e.target.checked
+                    ? [...selectedAnswers, opt]
+                    : selectedAnswers.filter((a) => a !== opt);
+                  onSelect(updated);
+                }}
+              />
+              <span>{optionPrefixPattern(index)} {opt}</span>
+            </label>
+          ))}
+        </div>
+      ) : (
+        <select
+          value={selectedAnswer}
+          onChange={(e) => onSelect(e.target.value)}
+          className="block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+        >
+          <option value="">Select answer...</option>
+          {options.map((opt, index) => (
+            <option key={index} value={opt}>
+              {optionPrefixPattern(index)} {opt}
+            </option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }
