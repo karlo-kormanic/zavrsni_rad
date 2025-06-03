@@ -1,12 +1,44 @@
-const SlidePreview = () => {
+'use client'
+
+import { Slide } from '@/../../types';
+
+interface SlidePreviewProps {
+  slides: Slide[];
+  activeSlideId: number;
+  onSelectSlide: (id: number) => void;
+  onAddSlide: () => void;
+}
+
+const SlidePreview = ({
+    slides,
+    activeSlideId,
+    onSelectSlide,
+    onAddSlide,
+}: SlidePreviewProps) => {
     return (
-        <div className="col-span-3 h-[76vh] bg-white rounded-lg shadow-md overflow-y-auto">
-            <div className="flex flex-col items-center gap-4 p-4 min-h-screen">
-            <div className="border border-blue-200">
-                <h2 className="text-xl font-bold mb-2">Question 1</h2>
-                <p>What is the capital of France?</p>
-            </div>
-            </div>
+        <div className="h-[76vh] p-2 bg-white rounded-lg shadow-md overflow-y-auto">
+            <ul className="space-y-2">
+                {slides.map((slide) => (
+                <li
+                    key={slide.id}
+                    onClick={() => onSelectSlide(slide.id)}
+                    className={`p-3 rounded cursor-pointer border ${
+                    slide.id === activeSlideId
+                        ? 'bg-blue-100 border-blue-500 font-semibold'
+                        : 'hover:bg-gray-200'
+                    }`}
+                >
+                    Slide {slide.id} — {slide.questionType.replace('_', ' ')}
+                </li>
+                ))}
+            </ul>
+            <br></br>
+            <button
+                onClick={onAddSlide}
+                className="w-full bg-blue-500 text-white px-3 py-2 mb-4 rounded hover:bg-blue-600 transition"
+            >
+                + Add Slide
+            </button>
         </div>
     )
 }

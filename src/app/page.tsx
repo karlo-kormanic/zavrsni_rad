@@ -1,6 +1,5 @@
 import Toolbar from '@/components/Toolbar';
 import TemplatePreview from '@/components/TemplatePreview';
-import SlidePreview from '@/components/SlidePreview';
 import SlideEditor from '@/components/SlideEditor';
 
 export default function Home() {
@@ -17,8 +16,6 @@ export default function Home() {
             <Toolbar/>
             {/* Template preview */}
             <TemplatePreview/>
-            {/* Slide preview */}
-            <SlidePreview/>
             {/* Slide editor area */}
             <SlideEditor/>
           </div>

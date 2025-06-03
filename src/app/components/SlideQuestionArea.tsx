@@ -1,48 +1,48 @@
 'use client';
-import { useState, useEffect } from 'react';
 import QuestionPrompt from './QuestionPrompt';
 import QuestionTypeDropdown from './QuestionTypeDropdown';
 import { AnswerEditor } from './AnswerEditor';
 import { AnswerSelector } from './AnswerSelector';
+import { Slide } from '@/../../types';
 
-const SlideQuestionArea = () => {
-  const [questionType, setQuestionType] = useState<string>('multiple_choice');
-  const [options, setOptions] = useState<string[]>(['', '', '', '']);
-  const [answer, setAnswer] = useState<string>('');
-  const [answers, setAnswers] = useState<string[]>([]);
+type SlideQuestionAreaProps = {
+  slide: Slide;
+  onUpdate: (payload: Partial<Slide>) => void;
+};
 
+const SlideQuestionArea = ({ slide, onUpdate }: SlideQuestionAreaProps) => {
   const questionTypes = [
     { value: 'multiple_choice', label: 'Multiple Choice' },
     { value: 'checkbox', label: 'Checkbox' },
     { value: 'scale', label: 'Scale' },
   ];
 
-  useEffect(() => {
-    setOptions((prev) => {
-      const newOptions = [...prev];
-      const targetLength = questionType === 'scale' ? 6 : 4;
-      while (newOptions.length < targetLength) newOptions.push('');
-      while (newOptions.length > targetLength) newOptions.pop();
-      return newOptions;
-    });
-    setAnswer('');
-    setAnswers([]);
-  }, [questionType]);
-
   const handleTypeChange = (selectedValue: string) => {
-    setQuestionType(selectedValue);
+    const requiredLength = selectedValue === 'scale' ? 6 : 4;
+    const newOptions = [...slide.options];
+
+    while (newOptions.length < requiredLength) newOptions.push('');
+    while (newOptions.length > requiredLength) newOptions.pop();
+
+    const newAnswer = selectedValue === 'checkbox' ? [] : '';
+
+    onUpdate({
+      questionType: selectedValue,
+      options: newOptions,
+      answer: newAnswer,
+    });
   };
 
   return (
     <div className="relative h-[55vh] bg-white border border-gray-300 p-4">
       <div className="flex justify-between mb-6">
         <div className="w-1/2 pr-2">
-          <QuestionPrompt onSave={() => console.log("Question saved.")} />
+          <QuestionPrompt onSave={() => console.log('Question saved.')} />
         </div>
         <div className="w-1/2 pl-2">
           <QuestionTypeDropdown
             options={questionTypes}
-            selectedValue={questionType}
+            selectedValue={slide.questionType}
             onChange={handleTypeChange}
             placeholder="Question Type"
           />
@@ -51,30 +51,28 @@ const SlideQuestionArea = () => {
 
       <div className="mb-6">
         <AnswerEditor
-          initialOptions={options}
-          onUpdate={setOptions}
+          initialOptions={slide.options}
+          onUpdate={(newOptions) => onUpdate({ options: newOptions })}
           optionPrefixPattern={
-            questionType === 'scale' ? (index) => `${index + 1}.` : undefined
+            slide.questionType === 'scale' ? (index) => `${index + 1}.` : undefined
           }
         />
 
-        {options.filter(opt => opt.trim() !== '').length > 0 && (
+        {slide.options.filter((opt) => opt.trim() !== '').length > 0 && (
           <AnswerSelector
-            options={options}
-            selectedAnswer={answer}
-            selectedAnswers={answers}
-            isMultiSelect={questionType === 'checkbox'}
-            isSortable={questionType === 'scale'}
+            options={slide.options}
+            selectedAnswer={typeof slide.answer === 'string' ? slide.answer : ''}
+            selectedAnswers={Array.isArray(slide.answer) ? slide.answer : []}
+            isMultiSelect={slide.questionType === 'checkbox'}
+            isSortable={slide.questionType === 'scale'}
             onSelect={(value) => {
-              if (questionType === 'checkbox') {
-                setAnswers(value as string[]);
-              } else {
-                setAnswer(value as string);
-              }
+              onUpdate({
+                answer: slide.questionType === 'checkbox' ? value as string[] : value as string,
+              });
             }}
-            onReorder={setOptions}
+            onReorder={(newOptions) => onUpdate({ options: newOptions })}
             optionPrefixPattern={
-              questionType === 'scale' ? (index) => `${index + 1}.` : undefined
+              slide.questionType === 'scale' ? (index) => `${index + 1}.` : undefined
             }
           />
         )}
@@ -84,8 +82,3 @@ const SlideQuestionArea = () => {
 };
 
 export default SlideQuestionArea;
-//TODO add question window expansion on new line in type your question...
-//TODO add scroll when answers would go out of screen at the bottom
-//TODO change saves to lower the amount of db calls, onChange -> onBlur
-//TODO browse the files and change local import path to global
-//TODO browse the files and unify export default function look
