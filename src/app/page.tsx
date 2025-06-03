@@ -11,7 +11,7 @@ export default function Home() {
           <div className="h-[4vh] flex items-center flex-shrink-0 px-8 border-gray-300">
             <h1 className="text-lg font-medium">Quiz creator</h1>
           </div>
-          <div className="grid grid-cols-20 gap-2 overflow-hidden">
+          <div className="grid grid-cols-20 gap-2">
             {/* Alatna traka */}
             <Toolbar/>
             {/* Template preview */}

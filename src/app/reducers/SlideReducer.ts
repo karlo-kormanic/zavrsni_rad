@@ -8,6 +8,7 @@ export const reducer = (state: State, action: Action): State => {
                 questionType: 'multiple_choice',
                 options: ['', '', '', ''],
                 answer: '',
+                note: '',
             };
             return {
                 ...state,

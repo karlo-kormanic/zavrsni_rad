@@ -5,6 +5,7 @@ export type Slide = {
   questionType: string;
   options: string[];
   answer: string | string[];
+  note?: string;
 };
 
 export type State = {

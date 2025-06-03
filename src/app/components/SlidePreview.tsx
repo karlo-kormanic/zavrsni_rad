@@ -16,7 +16,7 @@ const SlidePreview = ({
     onAddSlide,
 }: SlidePreviewProps) => {
     return (
-        <div className="h-[76vh] p-2 bg-white rounded-lg shadow-md overflow-y-auto">
+        <div className="h-[83vh] p-2 bg-white rounded-lg shadow-md overflow-y-auto">
             <ul className="space-y-2">
                 {slides.map((slide) => (
                 <li

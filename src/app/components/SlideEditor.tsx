@@ -23,7 +23,7 @@ const SlideEditor = () => {
     const activeSlide = state.slides.find((s) => s.id === state.activeSlideId);
 
     return (
-        <div className="h-[76vh] col-span-17 bg-white border border-gray-300 flex">
+        <div className="h-[84vh] col-span-17 bg-white border border-gray-300 flex">
             <div className="w-40 gap-2">
                 <SlidePreview
                     slides={state.slides}
@@ -42,7 +42,14 @@ const SlideEditor = () => {
                         }
                     />
                 )}
-                <NoteArea/>
+                {activeSlide && (
+                    <NoteArea
+                        note={activeSlide.note ?? ''}
+                        onChange={(note) =>
+                        dispatch({ type: 'UPDATE_SLIDE', id: activeSlide.id, payload: { note } })
+                        }
+                    />
+                )}
             </div>
         </div>
     )
