@@ -2,6 +2,7 @@ export type OptionPrefixPattern = (index: number) => string;
 
 export type Slide = {
   id: number;
+  question?: string;
   questionType: string;
   options: string[];
   answer: string | string[];

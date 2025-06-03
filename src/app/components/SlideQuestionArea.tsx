@@ -37,7 +37,11 @@ const SlideQuestionArea = ({ slide, onUpdate }: SlideQuestionAreaProps) => {
     <div className="relative h-[55vh] bg-white border border-gray-300 p-4">
       <div className="flex justify-between mb-6">
         <div className="w-1/2 pr-2">
-          <QuestionPrompt onSave={() => console.log('Question saved.')} />
+          <QuestionPrompt
+            initialValue={slide.question || ''}
+            onSave={(newQuestion) => onUpdate({ question: newQuestion })}
+            placeholder="Type your question..."
+          />
         </div>
         <div className="w-1/2 pl-2">
           <QuestionTypeDropdown

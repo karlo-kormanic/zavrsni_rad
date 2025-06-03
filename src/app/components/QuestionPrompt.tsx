@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-interface QuestionPrompt {
+interface QuestionPromptProps {
   initialValue?: string;
   onSave: (value: string) => void;
   placeholder?: string;
@@ -14,43 +14,60 @@ export default function QuestionPrompt({
   onSave,
   placeholder = 'Type your question...',
   className = '',
-}: QuestionPrompt) {
+}: QuestionPromptProps) {
   const [value, setValue] = useState(initialValue);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setValue(initialValue);
+    setSaveStatus('idle');
+  }, [initialValue]);
 
   useEffect(() => {
     if (value === initialValue) return;
 
     setSaveStatus('saving');
 
-    const timer = setTimeout(() => {
-        onSave(value);
-        setSaveStatus('saved');
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
 
-        const resetTimer = setTimeout(() => {
-            setSaveStatus('idle');
-        }, 2000);
+    saveTimerRef.current = setTimeout(() => {
+      onSave(value);
+      setSaveStatus('saved');
 
-        return () => clearTimeout(resetTimer);
+      idleTimerRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
   }, [value, initialValue, onSave]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setValue(e.target.value);
+  };
 
   return (
     <div className={`relative h-full ${className}`}>
       <textarea
         value={value}
-        onChange={(e) => {setValue(e.target.value)}}
+        onChange={handleChange}
         placeholder={placeholder}
-        className="absolute inset-0 p-2 border rounded-md 
-              overflow-y-auto resize-none"
+        className="absolute inset-0 p-2 border rounded-md overflow-y-auto resize-none"
         rows={3}
       />
       {saveStatus !== 'idle' && (
-        <span className={`absolute right-2 bottom-2 text-xs ${
-          saveStatus === 'saved' ? 'text-green-500' : 'text-gray-500'
-        }`}>
+        <span
+          className={`absolute right-2 bottom-2 text-xs ${
+            saveStatus === 'saved' ? 'text-green-500' : 'text-gray-500'
+          }`}
+        >
           {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
         </span>
       )}
