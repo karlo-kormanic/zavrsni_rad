@@ -1,8 +1,8 @@
 'use client';
-import QuestionPrompt from './QuestionPrompt';
-import QuestionTypeDropdown from './QuestionTypeDropdown';
-import { AnswerEditor } from './AnswerEditor';
-import { AnswerSelector } from './AnswerSelector';
+import QuestionPrompt from '@/components/QuestionPrompt';
+import QuestionTypeDropdown from '@/components/QuestionTypeDropdown';
+import { AnswerEditor } from '@/components/AnswerEditor';
+import { AnswerSelector } from '@/components/AnswerSelector';
 import { Slide } from '@/../../types';
 
 type SlideQuestionAreaProps = {

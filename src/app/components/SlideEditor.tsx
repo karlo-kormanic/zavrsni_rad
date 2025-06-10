@@ -2,10 +2,10 @@
 
 import  { useReducer } from 'react';
 import { reducer } from '@/reducers/SlideReducer';
-import NoteArea from "./NoteArea";
-import SlideQuestionArea from "./SlideQuestionArea";
-import QuizHeader from "./QuizHeader";
-import SlidePreview from './SlidePreview';
+import NoteArea from "@/components/NoteArea";
+import SlideQuestionArea from "@/components/SlideQuestionArea";
+import QuizHeader from "@/components/QuizHeader";
+import SlidePreview from '@/components/SlidePreview';
 
 const SlideEditor = () => {
     const [state, dispatch] = useReducer(reducer, { 
