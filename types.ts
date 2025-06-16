@@ -17,4 +17,5 @@ export type State = {
 export type Action =
   | { type: 'ADD_SLIDE' }
   | { type: 'SET_ACTIVE_SLIDE'; id: number }
-  | { type: 'UPDATE_SLIDE'; id: number; payload: Partial<Slide> };
+  | { type: 'UPDATE_SLIDE'; id: number; payload: Partial<Slide> }
+  | { type: 'DELETE_SLIDE'; id: number }

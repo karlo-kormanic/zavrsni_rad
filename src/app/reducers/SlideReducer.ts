@@ -28,6 +28,12 @@ export const reducer = (state: State, action: Action): State => {
                 ),
             };
 
+        case 'DELETE_SLIDE':
+            return {
+                ...state,
+                slides: state.slides.filter(slide => slide.id !== action.id),
+            };
+
         default:
             throw new Error('Unknown action');
         

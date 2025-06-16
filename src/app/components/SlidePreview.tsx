@@ -7,6 +7,7 @@ interface SlidePreviewProps {
   activeSlideId: number;
   onSelectSlide: (id: number) => void;
   onAddSlide: () => void;
+  onRemoveSlide: (id: number) => void;
 }
 
 const SlidePreview = ({
@@ -14,6 +15,7 @@ const SlidePreview = ({
     activeSlideId,
     onSelectSlide,
     onAddSlide,
+    onRemoveSlide,
 }: SlidePreviewProps) => {
     return (
         <div className="h-[83vh] p-2 bg-white rounded-lg shadow-md overflow-y-auto">
@@ -38,6 +40,17 @@ const SlidePreview = ({
                 className="w-full bg-blue-500 text-white px-3 py-2 mb-4 rounded hover:bg-blue-600 transition"
             >
                 + Add Slide
+            </button>
+            <button
+                onClick={() => {
+                    const lastSlide = slides[slides.length - 1];
+                    if(lastSlide) {
+                        onRemoveSlide(lastSlide.id);
+                    }
+                }}
+                className="w-full bg-blue-500 text-white px-3 py-2 mb-4 rounded hover:bg-blue-600 transition"
+            >
+                + Remove Last Slide
             </button>
         </div>
     )

@@ -30,6 +30,7 @@ const SlideEditor = () => {
                     activeSlideId={state.activeSlideId}
                     onSelectSlide={(id) => dispatch({ type: 'SET_ACTIVE_SLIDE', id})}
                     onAddSlide={() => dispatch({ type: 'ADD_SLIDE' })}
+                    onRemoveSlide={(id) => dispatch({ type: 'DELETE_SLIDE', id})}
                 />
             </div>
             <div className="flex-1 grid grid-rows-[auto_1fr_auto_auto] p-3 gap-3">
