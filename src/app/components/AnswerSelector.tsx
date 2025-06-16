@@ -7,8 +7,8 @@ import type { OptionPrefixPattern } from '@/../../types';
 interface SelectorProps {
   options: string[];
   selectedAnswer: string;
-  selectedAnswers: string[];
-  onSelect: (value: string | string[]) => void;
+  selectedAnswers: number[];
+  onSelect: (value: string | number[]) => void;
   onReorder?: (newOptions: string[]) => void;
   isMultiSelect?: boolean;
   isSortable?: boolean;
@@ -72,7 +72,7 @@ export function AnswerSelector({
   return (
     <div className="mt-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {isSortable ? 'Reorder Answers:' : 'Correct Answer:'}
+        {isSortable ? 'Answer Order:' : 'Correct Answer:'}
       </label>
 
       {isSortable ? (
@@ -91,11 +91,11 @@ export function AnswerSelector({
             <label key={index} className="flex items-center space-x-2">
               <input
                 type="checkbox"
-                checked={selectedAnswers.includes(opt)}
+                checked={selectedAnswers.includes(index)}
                 onChange={(e) => {
                   const updated = e.target.checked
-                    ? [...selectedAnswers, opt]
-                    : selectedAnswers.filter((a) => a !== opt);
+                    ? [...selectedAnswers, index]
+                    : selectedAnswers.filter((a) => a !== index);
                   onSelect(updated);
                 }}
               />
