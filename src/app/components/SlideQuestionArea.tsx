@@ -66,13 +66,17 @@ const SlideQuestionArea = ({ slide, onUpdate }: SlideQuestionAreaProps) => {
           <AnswerSelector
             options={slide.options}
             selectedAnswer={typeof slide.answer === 'string' ? slide.answer : ''}
-            selectedAnswers={Array.isArray(slide.answer) ? slide.answer : []}
+            selectedAnswers={Array.isArray(slide.answer) ? slide.answer.map((ans) => slide.options.indexOf(ans)) : []}
             isMultiSelect={slide.questionType === 'checkbox'}
             isSortable={slide.questionType === 'scale'}
             onSelect={(value) => {
-              onUpdate({
-                answer: slide.questionType === 'checkbox' ? value as string[] : value as string,
-              });
+              if(slide.questionType === 'checkbox') {
+                const indexes = value as number[];
+                const selectedValues = indexes.map((i) => slide.options[i]);
+                onUpdate({ answer: selectedValues });
+              } else {
+                onUpdate({ answer: value as string });
+              }
             }}
             onReorder={(newOptions) => onUpdate({ options: newOptions })}
             optionPrefixPattern={
