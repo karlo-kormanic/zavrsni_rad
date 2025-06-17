@@ -65,15 +65,17 @@ const SlideQuestionArea = ({ slide, onUpdate }: SlideQuestionAreaProps) => {
         {slide.options.filter((opt) => opt.trim() !== '').length > 0 && (
           <AnswerSelector
             options={slide.options}
-            selectedAnswer={typeof slide.answer === 'string' ? slide.answer : ''}
-            selectedAnswers={Array.isArray(slide.answer) ? slide.answer.map((ans) => slide.options.indexOf(ans)) : []}
+            selectedAnswer={typeof slide.answer === 'number' ? slide.answer : ''}
+            selectedAnswers={
+              Array.isArray(slide.answer) && slide.answer.every((a) => typeof a === 'number') 
+                ? (slide.answer as number[]) 
+                : []
+            }
             isMultiSelect={slide.questionType === 'checkbox'}
             isSortable={slide.questionType === 'scale'}
             onSelect={(value) => {
-              if(slide.questionType === 'checkbox') {
-                const indexes = value as number[];
-                const selectedValues = indexes.map((i) => slide.options[i]);
-                onUpdate({ answer: selectedValues });
+              if (slide.questionType === 'checkbox') {
+                onUpdate({ answer: value as number[] });  // store indices
               } else {
                 onUpdate({ answer: value as string });
               }

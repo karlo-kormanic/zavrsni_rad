@@ -6,9 +6,9 @@ import type { OptionPrefixPattern } from '@/../../types';
 
 interface SelectorProps {
   options: string[];
-  selectedAnswer: string;
+  selectedAnswer: number | '';
   selectedAnswers: number[];
-  onSelect: (value: string | number[]) => void;
+  onSelect: (value: string | number | number[]) => void;
   onReorder?: (newOptions: string[]) => void;
   isMultiSelect?: boolean;
   isSortable?: boolean;
@@ -106,12 +106,12 @@ export function AnswerSelector({
       ) : (
         <select
           value={selectedAnswer}
-          onChange={(e) => onSelect(e.target.value)}
+          onChange={(e) => onSelect(parseInt(e.target.value))}
           className="block w-full p-2 border border-gray-300 rounded-md shadow-sm"
         >
           <option value="">Select answer...</option>
           {options.map((opt, index) => (
-            <option key={index} value={opt}>
+            <option key={index} value={index}>
               {optionPrefixPattern(index)} {opt}
             </option>
           ))}

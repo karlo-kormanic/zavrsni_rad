@@ -33,6 +33,13 @@ export const reducer = (state: State, action: Action): State => {
                 ...state,
                 slides: state.slides.filter(slide => slide.id !== action.id),
             };
+        
+        case 'SET_INITIAL_SLIDES':
+            return {
+                ...state,
+                slides: action.payload,
+                activeSlideId: action.payload.length > 0 ? action.payload[0].id : null,
+            }
 
         default:
             throw new Error('Unknown action');

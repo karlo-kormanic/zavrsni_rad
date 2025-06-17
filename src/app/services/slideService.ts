@@ -11,7 +11,7 @@ export async function saveSlide(slide: Slide) {
 }
 
 export async function fetchSlides() {
-  const { data, error } = await supabase.from('slides').select('*');
+  const { data, error } = await supabase.from('slides').select('*').order('id', { ascending: true });
   if (error) throw error;
   return data;
 }

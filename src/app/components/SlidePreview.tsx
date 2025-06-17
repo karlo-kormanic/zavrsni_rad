@@ -4,7 +4,7 @@ import { Slide } from '@/../../types';
 
 interface SlidePreviewProps {
   slides: Slide[];
-  activeSlideId: number;
+  activeSlideId: number | null;
   onSelectSlide: (id: number) => void;
   onAddSlide: () => void;
   onRemoveSlide: (id: number) => void;

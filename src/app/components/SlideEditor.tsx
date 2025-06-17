@@ -1,25 +1,19 @@
 'use client';
 
-import  { useReducer } from 'react';
+import  { useEffect, useReducer } from 'react';
 import { reducer } from '@/reducers/SlideReducer';
 import NoteArea from "@/components/NoteArea";
 import SlideQuestionArea from "@/components/SlideQuestionArea";
 import QuizHeader from "@/components/QuizHeader";
 import SlidePreview from '@/components/SlidePreview';
 import { saveSlide, deleteSlide } from '@/services/slideService';
+import { fetchSlides } from '@/services/slideService';
 
 const SlideEditor = () => {
     const [state, dispatch] = useReducer(reducer, { 
-        slides: [
-            {
-                id: 1,
-                questionType: 'multiple_choice',
-                options: ['', '', '', ''],
-                answer: '',
-            },
-        ],
-        activeSlideId: 1,
-     });
+        slides: [],
+        activeSlideId: null,
+    });
 
     const activeSlide = state.slides.find((s) => s.id === state.activeSlideId);
 
@@ -51,6 +45,19 @@ const SlideEditor = () => {
         }
     };
 
+    useEffect(() => {
+        const loadSlides = async () => {
+            try {
+            const slides = await fetchSlides();
+            dispatch({ type: 'SET_INITIAL_SLIDES', payload: slides });
+            } catch (error) {
+            console.error('Failed to load slides:', error);
+            }
+        };
+
+        loadSlides();
+    }, []);
+
     return (
         <div className="h-[84vh] col-span-17 bg-white border border-gray-300 flex">
             <div className="w-40 gap-2">
@@ -59,7 +66,11 @@ const SlideEditor = () => {
                     activeSlideId={state.activeSlideId}
                     onSelectSlide={(id) => dispatch({ type: 'SET_ACTIVE_SLIDE', id})}
                     onAddSlide={handleAddSlide}
-                    onRemoveSlide={() => handleRemoveSlide(state.activeSlideId)}
+                    onRemoveSlide={() => {
+                        if (state.activeSlideId !== null) {
+                            handleRemoveSlide(state.activeSlideId);
+                        }
+                    }}
                 />
             </div>
             <div className="flex-1 grid grid-rows-[auto_1fr_auto_auto] p-3 gap-3">
