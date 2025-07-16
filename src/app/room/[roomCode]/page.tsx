@@ -29,6 +29,8 @@ export default function RoomPage() {
   const [submitted, setSubmitted] = useState(false);
   const [playerName, setPlayerName] = useState<string | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | number[] | null>(null);
+  const [nameInput, setNameInput] = useState('');
+  const [nameError, setNameError] = useState('');
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -36,12 +38,6 @@ export default function RoomPage() {
     const storedName = localStorage.getItem('player_name');
     if (storedName) {
       setPlayerName(storedName);
-    } else {
-      const name = prompt('Enter your name:');
-      if (name) {
-        localStorage.setItem('player_name', name);
-        setPlayerName(name);
-      }
     }
   }, []);
 
@@ -84,7 +80,7 @@ export default function RoomPage() {
           table: 'rooms',
           filter: `id=eq.${room.id}`,
         },
-        async (payload) => {
+        (payload) => {
           const updatedRoom = payload.new as Room;
           setRoom(updatedRoom);
         }
@@ -98,7 +94,7 @@ export default function RoomPage() {
 
   useEffect(() => {
     const fetchPlayerResponse = async () => {
-      if (!room?.id || !slides.length || playerName == null) return;
+      if (!room?.id || !slides.length || !playerName) return;
 
       const currentSlide = slides[room.current_slide_index];
 
@@ -140,12 +136,10 @@ export default function RoomPage() {
     const currentSlide = slides[room.current_slide_index];
     const questionType = currentSlide.questionType;
 
-    let answerPayload;
-    if (questionType === 'multiple_choice') {
-      answerPayload = selectedOption;
-    } else {
-      answerPayload = JSON.stringify(selectedOption);
-    }
+    const answerPayload =
+      questionType === 'multiple_choice'
+        ? selectedOption
+        : JSON.stringify(selectedOption);
 
     const { error } = await supabase.from('player_responses').upsert(
       [
@@ -167,9 +161,6 @@ export default function RoomPage() {
       setSubmitted(true);
     }
   };
-
-  const currentSlide = slides[room?.current_slide_index ?? 0];
-  const questionType = currentSlide?.questionType;
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -211,112 +202,158 @@ export default function RoomPage() {
     );
   }
 
-  if (!playerName) return <div className="text-white">Please enter your name...</div>;
   if (loading) return <div className="text-white">Loading...</div>;
   if (error || !room) return <div className="text-white">{error}</div>;
 
+  if (!playerName) {
+    return (
+      <div className="text-white p-4">
+        <h2 className="text-xl mb-2">Enter your name to join the room:</h2>
+        <input
+          type="text"
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+          className="text-black p-2 rounded border border-gray-300 mb-2 block w-100"
+          placeholder="Your name"
+        />
+        {nameError && <p className="text-red-500 mb-2">{nameError}</p>}
+        <button
+          onClick={async () => {
+            if (!nameInput.trim()) {
+              setNameError('Name cannot be empty.');
+              return;
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { data, error } = await supabase
+              .from('player_responses')
+              .select('player_name')
+              .eq('room_id', room.id)
+              .eq('player_name', nameInput.trim());
+
+            if (data && data.length > 0) {
+              setNameError('That name is already taken in this room. Please choose a different one.');
+            } else {
+              const cleanName = nameInput.trim();
+              localStorage.setItem('player_name', cleanName);
+              setPlayerName(cleanName);
+            }
+          }}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Join Room
+        </button>
+      </div>
+    );
+  }
+
+  const currentSlide = slides[room.current_slide_index];
+  const questionType = currentSlide?.questionType;
+
   return (
-    <div className="p-4 max-w-2xl mx-auto text-white">
-      <h1 className="text-2xl font-bold mb-4">Room Code: {room.room_code}</h1>
+    <div className="min-h-screen bg-black text-white">
+      <div className="p-4 max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Room Code: {room.room_code}</h1>
 
-      {!room.has_started ? (
-        <p>Waiting for host to start...</p>
-      ) : currentSlide ? (
-        <div className="bg-white p-6 rounded shadow-md">
-          <h2 className="text-xl font-semibold mb-4 text-black">{currentSlide.question}</h2>
+        {!room.has_started ? (
+          <p>Waiting for host to start...</p>
+        ) : currentSlide ? (
+          <div className="bg-white p-6 rounded shadow-md">
+            <h2 className="text-xl font-semibold mb-4 text-black">{currentSlide.question}</h2>
 
-          {!submitted ? (
-            <>
-              <ul className="space-y-2">
-                {questionType === 'multiple_choice' &&
-                  currentSlide.options.map((opt, idx) => (
-                    <li key={idx}>
-                      <label className="flex items-center gap-2 cursor-pointer text-black">
-                        <input
-                          type="radio"
-                          name="answer"
-                          value={idx}
-                          checked={selectedOption === idx}
-                          onChange={() => setSelectedOption(idx)}
-                        />
-                        {String.fromCharCode(65 + idx)}) {opt}
-                      </label>
-                    </li>
-                  ))}
-
-                {questionType === 'checkbox' &&
-                  currentSlide.options.map((opt, idx) => (
-                    <li key={idx}>
-                      <label className="flex items-center gap-2 cursor-pointer text-black">
-                        <input
-                          type="checkbox"
-                          value={idx}
-                          checked={Array.isArray(selectedOption) && selectedOption.includes(idx)}
-                          onChange={(e) => {
-                            if (!Array.isArray(selectedOption)) {
-                              setSelectedOption([idx]);
-                            } else {
-                              const updated = e.target.checked
-                                ? [...selectedOption, idx]
-                                : selectedOption.filter((v) => v !== idx);
-                              setSelectedOption(updated);
-                            }
-                          }}
-                        />
-                        {String.fromCharCode(65 + idx)}) {opt}
-                      </label>
-                    </li>
-                  ))}
-
-                {questionType === 'scale' && (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={
-                        Array.isArray(selectedOption)
-                          ? selectedOption
-                          : currentSlide.options.map((_, idx) => idx)
-                      }
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <ul>
-                        {(Array.isArray(selectedOption)
-                          ? selectedOption
-                          : currentSlide.options.map((_, idx) => idx)
-                        ).map((idx) => (
-                          <SortableItem
-                            key={idx}
-                            id={idx}
-                            label={currentSlide.options[idx]}
+            {!submitted ? (
+              <>
+                <ul className="space-y-2">
+                  {questionType === 'multiple_choice' &&
+                    currentSlide.options.map((opt, idx) => (
+                      <li key={idx}>
+                        <label className="flex items-center gap-2 cursor-pointer text-black">
+                          <input
+                            type="radio"
+                            name="answer"
+                            value={idx}
+                            checked={selectedOption === idx}
+                            onChange={() => setSelectedOption(idx)}
                           />
-                        ))}
-                      </ul>
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </ul>
+                          {String.fromCharCode(65 + idx)}) {opt}
+                        </label>
+                      </li>
+                    ))}
 
-              <button
-                onClick={handleSubmit}
-                disabled={
-                  selectedOption === null ||
-                  (Array.isArray(selectedOption) && selectedOption.length === 0)
-                }
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                Submit
-              </button>
-            </>
-          ) : (
-            <p className="mt-4 text-green-600 font-semibold">Answer submitted!</p>
-          )}
-        </div>
-      ) : (
-        <p>No slide found.</p>
-      )}
+                  {questionType === 'checkbox' &&
+                    currentSlide.options.map((opt, idx) => (
+                      <li key={idx}>
+                        <label className="flex items-center gap-2 cursor-pointer text-black">
+                          <input
+                            type="checkbox"
+                            value={idx}
+                            checked={Array.isArray(selectedOption) && selectedOption.includes(idx)}
+                            onChange={(e) => {
+                              if (!Array.isArray(selectedOption)) {
+                                setSelectedOption([idx]);
+                              } else {
+                                const updated = e.target.checked
+                                  ? [...selectedOption, idx]
+                                  : selectedOption.filter((v) => v !== idx);
+                                setSelectedOption(updated);
+                              }
+                            }}
+                          />
+                          {String.fromCharCode(65 + idx)}) {opt}
+                        </label>
+                      </li>
+                    ))}
+
+                  {questionType === 'scale' && (
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={
+                          Array.isArray(selectedOption)
+                            ? selectedOption
+                            : currentSlide.options.map((_, idx) => idx)
+                        }
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <ul>
+                          {(Array.isArray(selectedOption)
+                            ? selectedOption
+                            : currentSlide.options.map((_, idx) => idx)
+                          ).map((idx) => (
+                            <SortableItem
+                              key={idx}
+                              id={idx}
+                              label={currentSlide.options[idx]}
+                            />
+                          ))}
+                        </ul>
+                      </SortableContext>
+                    </DndContext>
+                  )}
+                </ul>
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={
+                    selectedOption === null ||
+                    (Array.isArray(selectedOption) && selectedOption.length === 0)
+                  }
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+                >
+                  Submit
+                </button>
+              </>
+            ) : (
+              <p className="mt-4 text-green-600 font-semibold">Answer submitted!</p>
+            )}
+          </div>
+        ) : (
+          <p>No slide found.</p>
+        )}
+      </div>
     </div>
   );
 }
