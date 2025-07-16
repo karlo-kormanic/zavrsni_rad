@@ -108,18 +108,33 @@ export default function RoomPage() {
 
       if (data) {
         setSubmitted(true);
+
         try {
-          const parsed =
-            currentSlide.questionType === 'multiple_choice'
-              ? data.selected_option
-              : JSON.parse(data.selected_option);
+          let parsed;
+
+          if (currentSlide.questionType === 'multiple_choice') {
+            parsed = data.selected_option;
+          } else if (
+            currentSlide.questionType === 'checkbox' ||
+            currentSlide.questionType === 'scale'
+          ) {
+            parsed = JSON.parse(data.selected_option);
+          }
+
           setSelectedOption(parsed);
         } catch {
           console.warn('Failed to parse stored answer.');
+          setSelectedOption(null);
         }
       } else {
         setSubmitted(false);
-        setSelectedOption(null);
+
+        // 👇 Default for scale question is a sequential array of indices
+        if (currentSlide.questionType === 'scale') {
+          setSelectedOption(currentSlide.options.map((_, idx) => idx));
+        } else {
+          setSelectedOption(null);
+        }
       }
 
       if (error && error.code !== 'PGRST116') {
@@ -129,6 +144,7 @@ export default function RoomPage() {
 
     fetchPlayerResponse();
   }, [room?.id, slides, room?.current_slide_index, playerName]);
+
 
   const handleSubmit = async () => {
     if (!room || !slides.length || selectedOption === null || !playerName) return;

@@ -238,10 +238,13 @@ export default function HostRoomPage() {
               {currentSlide?.options.map((opt: string, idx: number) => (
                 <li key={idx} className="text-gray-700">
                   <span className="font-semibold">{String.fromCharCode(65 + idx)})</span> {opt}
-                  {room.has_started && answerStats[idx] !== undefined && (
-                    <span className="ml-2 text-sm text-blue-600">
-                      – {answerStats[idx]} odgovor{answerStats[idx] === 1 ? '' : 'a'}
-                    </span>
+                  {(currentSlide.questionType === 'multiple_choice' ||
+                    currentSlide.questionType === 'checkbox') &&
+                    room.has_started &&
+                    answerStats[idx] !== undefined && (
+                      <span className="ml-2 text-sm text-blue-600">
+                        – {answerStats[idx]} answer{answerStats[idx] === 1 ? '' : 's'}
+                      </span>
                   )}
                 </li>
               ))}
@@ -250,7 +253,7 @@ export default function HostRoomPage() {
 
           <div className="mb-4">
             <p className="text-lg font-semibold text-white">
-              {players.length} players answered the question
+              {players.length} player{players.length === 1 ? '' : 's'} answered the question
             </p>
             <ul className="list-disc list-inside text-white">
               {players.map((name) => (
