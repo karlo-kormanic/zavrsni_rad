@@ -1,0 +1,282 @@
+'use client';
+
+import { useEffect, useState, useRef } from 'react';
+import { useParams } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+import { Slide, Room } from '@/../../types';
+
+export default function HostRoomPage() {
+  const { roomCode } = useParams();
+  const [room, setRoom] = useState<Room | null>(null);
+  const [slides, setSlides] = useState<Slide[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [changingSlide, setChangingSlide] = useState(false);
+  const [players, setPlayers] = useState<string[]>([]);
+  const [answerStats, setAnswerStats] = useState<Record<number, number>>({});
+
+  const roomRef = useRef<Room | null>(null);
+  const slidesRef = useRef<Slide[]>([]);
+
+  useEffect(() => {
+    roomRef.current = room;
+  }, [room]);
+
+  useEffect(() => {
+    slidesRef.current = slides;
+  }, [slides]);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      const { data: roomData } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('room_code', String(roomCode).toUpperCase())
+        .single();
+
+      const { data: slidesData } = await supabase
+        .from('slides')
+        .select('*')
+        .order('id', { ascending: true });
+
+      setRoom(roomData ?? null);
+      setSlides(slidesData ?? []);
+      setLoading(false);
+    };
+
+    fetchInitialData();
+  }, [roomCode]);
+
+  useEffect(() => {
+    if (!room?.id) return;
+
+    const channel = supabase
+      .channel(`room-updates-${room.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rooms',
+          filter: `id=eq.${room.id}`,
+        },
+        (payload) => {
+          const updatedRoom = payload.new as Room;
+          setRoom(updatedRoom);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [room?.id]);
+
+  const fetchResponses = async () => {
+    const currentRoom = roomRef.current;
+    const currentSlides = slidesRef.current;
+    if (!currentRoom || currentSlides.length === 0) return;
+
+    const currentSlide = currentSlides[currentRoom.current_slide_index];
+
+    const { data: responses, error } = await supabase
+      .from('player_responses')
+      .select('player_name, selected_option')
+      .eq('room_id', currentRoom.id)
+      .eq('slide_id', currentSlide.id);
+
+    if (error) {
+      console.error('Failed to fetch player responses:', error.message);
+      return;
+    }
+
+    const stats: Record<number, number> = {};
+    const names = new Set<string>();
+
+    responses.forEach((r) => {
+      names.add(r.player_name);
+      try {
+        const parsed = JSON.parse(r.selected_option);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((idx) => {
+            stats[idx] = (stats[idx] || 0) + 1;
+          });
+        } else {
+          stats[parsed] = (stats[parsed] || 0) + 1;
+        }
+      } catch {
+        stats[r.selected_option] = (stats[r.selected_option] || 0) + 1;
+      }
+    });
+
+    setPlayers(Array.from(names));
+    setAnswerStats(stats);
+  };
+
+  useEffect(() => {
+    fetchResponses();
+  }, [room?.current_slide_index]);
+
+  useEffect(() => {
+    if (!room?.id) return;
+
+    const responseChannel = supabase
+      .channel(`response-updates-${room.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'player_responses',
+          filter: `room_id=eq.${room.id}`,
+        },
+        () => {
+          fetchResponses();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(responseChannel);
+    };
+  }, [room?.id]);
+
+  const handleStart = async () => {
+    if (!room) return;
+
+    const { error } = await supabase
+      .from('rooms')
+      .update({ has_started: true, current_slide_index: 0 })
+      .eq('id', room.id);
+
+    if (error) {
+      console.error('Failed to start quiz:', error.message);
+    } else {
+      setRoom((prev) =>
+        prev
+          ? {
+              ...prev,
+              has_started: true,
+              current_slide_index: 0,
+            }
+          : prev
+      );
+    }
+  };
+
+  const changeSlide = async (delta: number) => {
+    if (!room || changingSlide) return;
+
+    setChangingSlide(true);
+
+    const { data: latestRoom, error: fetchError } = await supabase
+      .from('rooms')
+      .select('*')
+      .eq('id', room.id)
+      .single();
+
+    if (fetchError || !latestRoom) {
+      console.error('Failed to fetch latest room state:', fetchError?.message);
+      setChangingSlide(false);
+      return;
+    }
+
+    const newIndex = Math.min(
+      Math.max(0, latestRoom.current_slide_index + delta),
+      slides.length - 1
+    );
+
+    if (newIndex === latestRoom.current_slide_index) {
+      setChangingSlide(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('rooms')
+      .update({ current_slide_index: newIndex })
+      .eq('id', room.id);
+
+    if (error) {
+      console.error('Slide update error:', error.message);
+      setChangingSlide(false);
+      return;
+    }
+
+    setRoom((prev) =>
+      prev
+        ? {
+            ...prev,
+            current_slide_index: newIndex,
+          }
+        : prev
+    );
+
+    setChangingSlide(false);
+  };
+
+  if (loading || !room) return <div>Loading...</div>;
+  const currentSlide = slides[room.current_slide_index];
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Hosting Room: {room.room_code}</h1>
+
+      {!room.has_started ? (
+        <button
+          onClick={handleStart}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          Start Quiz
+        </button>
+      ) : (
+        <>
+          <div className="bg-white p-6 rounded shadow mb-4 max-w-xl">
+            <div className="mb-2 text-gray-700 text-sm">
+              Slide {room.current_slide_index + 1} of {slides.length}
+            </div>
+            <h2 className="text-lg font-semibold text-gray-800">{currentSlide?.question}</h2>
+            <ul className="mt-2 space-y-1">
+              {currentSlide?.options.map((opt: string, idx: number) => (
+                <li key={idx} className="text-gray-700">
+                  <span className="font-semibold">{String.fromCharCode(65 + idx)})</span> {opt}
+                  {room.has_started && answerStats[idx] !== undefined && (
+                    <span className="ml-2 text-sm text-blue-600">
+                      – {answerStats[idx]} odgovor{answerStats[idx] === 1 ? '' : 'a'}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-lg font-semibold text-white">
+              {players.length} players answered the question
+            </p>
+            <ul className="list-disc list-inside text-white">
+              {players.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={() => changeSlide(-1)}
+              disabled={room.current_slide_index === 0 || changingSlide}
+              className="px-4 py-2 bg-gray-500 rounded disabled:opacity-50 text-white"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => changeSlide(1)}
+              disabled={room.current_slide_index >= slides.length - 1 || changingSlide}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

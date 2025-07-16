@@ -20,3 +20,13 @@ export type Action =
   | { type: 'UPDATE_SLIDE'; id: number; payload: Partial<Slide> }
   | { type: 'DELETE_SLIDE'; id: number }
   | { type: 'SET_INITIAL_SLIDES'; payload: Slide[] }
+
+export type Room = {
+  id: number;
+  room_code: string;
+  status: string;
+  current_slide_index: number;
+  created_at: string;
+  has_started?: boolean;
+  // quiz_id?: number;
+};
