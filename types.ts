@@ -5,7 +5,7 @@ export type Slide = {
   question?: string;
   questionType: string;
   options: string[];
-  answer: string | string[] | number[];
+  answer: string | string[] | number | number[];
   note?: string;
 };
 

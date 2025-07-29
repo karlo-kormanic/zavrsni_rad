@@ -1,6 +1,18 @@
 'use client';
-import { DndContext, closestCenter, useSensors, useSensor, PointerSensor, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import {
+  DndContext,
+  closestCenter,
+  useSensors,
+  useSensor,
+  PointerSensor,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { OptionPrefixPattern } from '@/../../types';
 
@@ -8,8 +20,9 @@ interface SelectorProps {
   options: string[];
   selectedAnswer: number | '';
   selectedAnswers: number[];
+  answerOrder?: number[]; // For sortable mode (host slide editor for scale)
+  setAnswerOrder?: (order: number[]) => void;
   onSelect: (value: string | number | number[]) => void;
-  onReorder?: (newOptions: string[]) => void;
   isMultiSelect?: boolean;
   isSortable?: boolean;
   optionPrefixPattern?: OptionPrefixPattern;
@@ -48,8 +61,9 @@ export function AnswerSelector({
   options,
   selectedAnswer,
   selectedAnswers,
+  answerOrder,
+  setAnswerOrder,
   onSelect,
-  onReorder,
   isMultiSelect = false,
   isSortable = false,
   optionPrefixPattern = (index) => `${String.fromCharCode(97 + index)})`,
@@ -57,13 +71,17 @@ export function AnswerSelector({
   const sensors = useSensors(useSensor(PointerSensor));
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (!answerOrder || !setAnswerOrder) return;
+
     const { active, over } = event;
     if (!over) return;
-    const oldIndex = Number(active.id);
-    const newIndex = Number(over.id);
+
+    const oldIndex = answerOrder.indexOf(Number(active.id));
+    const newIndex = answerOrder.indexOf(Number(over.id));
     if (oldIndex !== newIndex) {
-      const reordered = arrayMove(options, oldIndex, newIndex);
-      onReorder?.(reordered);
+      const newOrder = arrayMove(answerOrder, oldIndex, newIndex);
+      setAnswerOrder(newOrder);
+      onSelect(newOrder); // set the answer as an array of indices
     }
   };
 
@@ -75,12 +93,17 @@ export function AnswerSelector({
         {isSortable ? 'Answer Order:' : 'Correct Answer:'}
       </label>
 
-      {isSortable ? (
+      {isSortable && answerOrder && setAnswerOrder ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={options.map((_, idx) => idx)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={answerOrder} strategy={verticalListSortingStrategy}>
             <ul>
-              {options.map((opt, index) => (
-                <SortableItem key={index} id={index} option={opt} prefix={optionPrefixPattern(index)} />
+              {answerOrder.map((optIndex) => (
+                <SortableItem
+                  key={optIndex}
+                  id={optIndex}
+                  option={options[optIndex]}
+                  prefix={optionPrefixPattern(optIndex)}
+                />
               ))}
             </ul>
           </SortableContext>
@@ -99,7 +122,9 @@ export function AnswerSelector({
                   onSelect(updated);
                 }}
               />
-              <span>{optionPrefixPattern(index)} {opt}</span>
+              <span>
+                {optionPrefixPattern(index)} {opt}
+              </span>
             </label>
           ))}
         </div>
