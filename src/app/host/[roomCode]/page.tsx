@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Slide, Room } from '@/../../types';
+import Scoreboard from '@/components/Scoreboard';
+import { calculateScores } from '@/lib/calculateScores'; // ✅ adjust this path if needed
 
 export default function HostRoomPage() {
   const { roomCode } = useParams();
@@ -13,6 +15,8 @@ export default function HostRoomPage() {
   const [changingSlide, setChangingSlide] = useState(false);
   const [players, setPlayers] = useState<string[]>([]);
   const [answerStats, setAnswerStats] = useState<Record<number, number>>({});
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [showingResults, setShowingResults] = useState(false);
 
   const roomRef = useRef<Room | null>(null);
   const slidesRef = useRef<Slide[]>([]);
@@ -75,6 +79,7 @@ export default function HostRoomPage() {
     const currentRoom = roomRef.current;
     const currentSlides = slidesRef.current;
     if (!currentRoom || currentSlides.length === 0) return;
+    if (currentRoom.current_slide_index === -1) return;
 
     const currentSlide = currentSlides[currentRoom.current_slide_index];
 
@@ -213,7 +218,32 @@ export default function HostRoomPage() {
     setChangingSlide(false);
   };
 
+  // ✅ NEW score calculation using shared logic
+  const calculateScoresAndShow = async () => {
+    if (!room) return;
+
+    const { data: responses, error } = await supabase
+      .from('player_responses')
+      .select('player_name, slide_id, selected_option')
+      .eq('room_id', room.id);
+
+    if (error || !responses) {
+      console.error('Failed to fetch responses for scoring:', error?.message);
+      return;
+    }
+
+    const scoreMap = calculateScores(slides, responses);
+    setScores(scoreMap);
+    setShowingResults(true);
+
+    await supabase
+      .from('rooms')
+      .update({ current_slide_index: -1 })
+      .eq('id', room.id);
+  };
+
   if (loading || !room) return <div>Loading...</div>;
+
   const currentSlide = slides[room.current_slide_index];
 
   return (
@@ -229,55 +259,69 @@ export default function HostRoomPage() {
         </button>
       ) : (
         <>
-          <div className="bg-white p-6 rounded shadow mb-4 max-w-xl">
-            <div className="mb-2 text-gray-700 text-sm">
-              Slide {room.current_slide_index + 1} of {slides.length}
-            </div>
-            <h2 className="text-lg font-semibold text-gray-800">{currentSlide?.question}</h2>
-            <ul className="mt-2 space-y-1">
-              {currentSlide?.options.map((opt: string, idx: number) => (
-                <li key={idx} className="text-gray-700">
-                  <span className="font-semibold">{String.fromCharCode(65 + idx)})</span> {opt}
-                  {(currentSlide.questionType === 'multiple_choice' ||
-                    currentSlide.questionType === 'checkbox') &&
-                    room.has_started &&
-                    answerStats[idx] !== undefined && (
-                      <span className="ml-2 text-sm text-blue-600">
-                        – {answerStats[idx]} answer{answerStats[idx] === 1 ? '' : 's'}
-                      </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+          {room.current_slide_index !== -1 && (
+            <>
+              <div className="bg-white p-6 rounded shadow mb-4 max-w-xl">
+                <div className="mb-2 text-gray-700 text-sm">
+                  Slide {room.current_slide_index + 1} of {slides.length}
+                </div>
+                <h2 className="text-lg font-semibold text-gray-800">{currentSlide?.question}</h2>
+                <ul className="mt-2 space-y-1">
+                  {currentSlide?.options.map((opt: string, idx: number) => (
+                    <li key={idx} className="text-gray-700">
+                      <span className="font-semibold">{String.fromCharCode(65 + idx)})</span> {opt}
+                      {(currentSlide.questionType === 'multiple_choice' ||
+                        currentSlide.questionType === 'checkbox') &&
+                        room.has_started &&
+                        answerStats[idx] !== undefined && (
+                          <span className="ml-2 text-sm text-blue-600">
+                            – {answerStats[idx]} answer{answerStats[idx] === 1 ? '' : 's'}
+                          </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-          <div className="mb-4">
-            <p className="text-lg font-semibold text-white">
-              {players.length} player{players.length === 1 ? '' : 's'} answered the question
-            </p>
-            <ul className="list-disc list-inside text-white">
-              {players.map((name) => (
-                <li key={name}>{name}</li>
-              ))}
-            </ul>
-          </div>
+              <div className="mb-4">
+                <p className="text-lg font-semibold text-white">
+                  {players.length} player{players.length === 1 ? '' : 's'} answered the question
+                </p>
+                <ul className="list-disc list-inside text-white">
+                  {players.map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
+              </div>
 
-          <div className="flex gap-4">
-            <button
-              onClick={() => changeSlide(-1)}
-              disabled={room.current_slide_index === 0 || changingSlide}
-              className="px-4 py-2 bg-gray-500 rounded disabled:opacity-50 text-white"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => changeSlide(1)}
-              disabled={room.current_slide_index >= slides.length - 1 || changingSlide}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
+              <div className="flex gap-4 mb-4">
+                <button
+                  onClick={() => changeSlide(-1)}
+                  disabled={room.current_slide_index === 0 || changingSlide}
+                  className="px-4 py-2 bg-gray-500 rounded disabled:opacity-50 text-white"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => changeSlide(1)}
+                  disabled={room.current_slide_index >= slides.length - 1 || changingSlide}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                  Next
+                </button>
+                {room.current_slide_index === slides.length - 1 && (
+                  <button
+                    onClick={calculateScoresAndShow}
+                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+                  >
+                    Show Results
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {showingResults && <Scoreboard scores={scores} />}
         </>
       )}
     </div>

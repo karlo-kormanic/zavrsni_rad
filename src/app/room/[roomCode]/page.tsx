@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 import type { Room, Slide } from '@/../../types';
 import {
   DndContext,
@@ -31,6 +32,8 @@ export default function RoomPage() {
   const [selectedOption, setSelectedOption] = useState<number | number[] | null>(null);
   const [nameInput, setNameInput] = useState('');
   const [nameError, setNameError] = useState('');
+  const router = useRouter();
+
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -47,7 +50,7 @@ export default function RoomPage() {
         .from('rooms')
         .select('*')
         .eq('room_code', String(roomCode).toUpperCase())
-        .single();
+        .maybeSingle();
 
       const { data: slidesData } = await supabase
         .from('slides')
@@ -83,6 +86,10 @@ export default function RoomPage() {
         (payload) => {
           const updatedRoom = payload.new as Room;
           setRoom(updatedRoom);
+
+          if (updatedRoom.current_slide_index === -1) {
+            router.push(`/player/results/${roomCode}`); // or `/results?room=XYZ`
+          }
         }
       )
       .subscribe();
@@ -90,11 +97,11 @@ export default function RoomPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [room?.id]);
+  }, [room?.id, router, roomCode]);
 
   useEffect(() => {
     const fetchPlayerResponse = async () => {
-      if (!room?.id || !slides.length || !playerName) return;
+      if (!room || !slides.length || !playerName) return;
 
       const currentSlide = slides[room.current_slide_index];
 
@@ -104,7 +111,7 @@ export default function RoomPage() {
         .eq('room_id', room.id)
         .eq('slide_id', currentSlide.id)
         .eq('player_name', playerName)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setSubmitted(true);
@@ -143,7 +150,7 @@ export default function RoomPage() {
     };
 
     fetchPlayerResponse();
-  }, [room?.id, slides, room?.current_slide_index, playerName]);
+  }, [room, slides, room?.current_slide_index, playerName]);
 
 
   const handleSubmit = async () => {
@@ -261,6 +268,11 @@ export default function RoomPage() {
         </button>
       </div>
     );
+  }
+
+  if (room.current_slide_index >= slides.length) {
+        router.push(`/player/results/${roomCode}`);
+        return null;
   }
 
   const currentSlide = slides[room.current_slide_index];

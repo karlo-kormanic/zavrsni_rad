@@ -30,3 +30,12 @@ export type Room = {
   has_started?: boolean;
   // quiz_id?: number;
 };
+
+export type PlayerResponse = {
+  id: number;
+  room_id: number;
+  slide_id: number;
+  player_name: string;
+  selected_option: string;
+  created_at: string;
+};
