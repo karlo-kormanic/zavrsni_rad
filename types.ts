@@ -1,5 +1,15 @@
 export type OptionPrefixPattern = (index: number) => string;
 
+export type Quiz = {
+  id: string;
+  title: string;
+  description?: string;
+  host_id: string;
+  created_at: string;
+  updated_at: string;
+  slides_count?: number;
+};
+
 export type Slide = {
   id: number;
   question?: string;
@@ -7,6 +17,7 @@ export type Slide = {
   options: string[];
   answer: string | string[] | number | number[];
   note?: string;
+  quiz_id: string;
 };
 
 export type State = {

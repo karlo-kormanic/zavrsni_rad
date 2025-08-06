@@ -5,9 +5,10 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Slide, Room } from '@/../../types';
 import Scoreboard from '@/components/Scoreboard';
-import { calculateScores } from '@/lib/calculateScores'; // ✅ adjust this path if needed
+import { calculateScores } from '@/lib/calculateScores';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
-export default function HostRoomPage() {
+function HostRoomPage() {
   const { roomCode } = useParams();
   const [room, setRoom] = useState<Room | null>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -218,7 +219,6 @@ export default function HostRoomPage() {
     setChangingSlide(false);
   };
 
-  // ✅ NEW score calculation using shared logic
   const calculateScoresAndShow = async () => {
     if (!room) return;
 
@@ -326,4 +326,12 @@ export default function HostRoomPage() {
       )}
     </div>
   );
+}
+
+export default function ProtectedHostRoomPage() {
+  return (
+    <ProtectedRoute>
+      <HostRoomPage />
+    </ProtectedRoute>
+  )
 }
