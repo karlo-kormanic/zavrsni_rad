@@ -20,7 +20,7 @@ const SlidePreview = ({
     return (
         <div className="h-[83vh] p-2 bg-white rounded-lg shadow-md overflow-y-auto">
             <ul className="space-y-2">
-                {slides.map((slide) => (
+                {slides.map((slide, index) => (
                 <li
                     key={slide.id}
                     onClick={() => onSelectSlide(slide.id)}
@@ -30,7 +30,7 @@ const SlidePreview = ({
                         : 'hover:bg-gray-200'
                     }`}
                 >
-                    Slide {slide.id} — {slide.questionType.replace('_', ' ')}
+                    Question {index + 1} — {slide.questionType.replace('_', ' ')}
                 </li>
                 ))}
             </ul>

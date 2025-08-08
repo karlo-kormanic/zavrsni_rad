@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { Quiz } from '@/../../types' // Only import Quiz type here
+import { Quiz } from '@/../../types'
 
 export default function QuizDashboard() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([])

@@ -8,7 +8,7 @@ export default function LoginPage() {
   const router = useRouter()
 
   if (user) {
-    router.push('/dashboard')
+    router.push('/host/dashboard')
     return null
   }
 

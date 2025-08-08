@@ -7,10 +7,9 @@ export default function HomePage() {
   const router = useRouter()
   const { user } = useAuth()
 
-  // If user is already logged in, redirect to dashboard
   useEffect(() => {
     if (user) {
-      router.push('/dashboard')
+      router.push('/host/dashboard')
     }
   }, [user, router])
 

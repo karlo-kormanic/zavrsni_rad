@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
@@ -32,11 +32,13 @@ export default function RoomPage() {
   const [selectedOption, setSelectedOption] = useState<number | number[] | null>(null);
   const [nameInput, setNameInput] = useState('');
   const [nameError, setNameError] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected'>('connected');
   const router = useRouter();
-
+  const prevSlideIndex = useRef<number | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
+  // Load player name from localStorage
   useEffect(() => {
     const storedName = localStorage.getItem('player_name');
     if (storedName) {
@@ -44,37 +46,99 @@ export default function RoomPage() {
     }
   }, []);
 
+  // Connection monitoring
+  useEffect(() => {
+    const channel = supabase.channel('connection-status')
+      .on('presence', { event: 'sync' }, () => {
+        console.log('Online status:', channel.presenceState());
+      })
+      .on('broadcast', { event: 'connection' }, (payload) => {
+        setConnectionStatus(payload.payload.status);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Initial data fetch with retry logic
   useEffect(() => {
     const fetchData = async () => {
-      const { data: roomData } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('room_code', String(roomCode).toUpperCase())
-        .maybeSingle();
+      try {
+        setLoading(true);
+        
+        // 1. Fetch room data
+        const { data: roomData, error: roomError } = await supabase
+          .from('rooms')
+          .select('*, quizzes!inner(id)')
+          .eq('room_code', String(roomCode).toUpperCase())
+          .single();
 
-      const { data: slidesData } = await supabase
-        .from('slides')
-        .select('*')
-        .order('id');
+        if (roomError || !roomData) {
+          throw roomError || new Error('Room not found');
+        }
 
-      if (roomData && slidesData) {
         setRoom(roomData);
-        setSlides(slidesData);
-      } else {
-        setError('Failed to load room or slides');
-      }
+        prevSlideIndex.current = roomData.current_slide_index;
 
-      setLoading(false);
+        // 2. Fetch slides
+        const { data: slidesData, error: slidesError } = await supabase
+          .from('slides')
+          .select('*')
+          .eq('quiz_id', roomData.quiz_id)
+          .order('id');
+
+        if (slidesError) throw slidesError;
+        setSlides(slidesData || []);
+
+        // 3. Fetch initial player response if exists
+        if (playerName && slidesData?.length) {
+          const currentSlide = slidesData[roomData.current_slide_index];
+          if (currentSlide) {
+            const { data: response } = await supabase
+              .from('player_responses')
+              .select('*')
+              .eq('room_id', roomData.id)
+              .eq('slide_id', currentSlide.id)
+              .eq('player_name', playerName)
+              .maybeSingle();
+
+            setSubmitted(!!response);
+            if (response) {
+              try {
+                const parsed = currentSlide.questionType === 'multiple_choice' 
+                  ? response.selected_option 
+                  : JSON.parse(response.selected_option);
+                setSelectedOption(parsed);
+              } catch {
+                setSelectedOption(null);
+              }
+            }
+          }
+        }
+
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+        console.error('Fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
-  }, [roomCode]);
+  }, [roomCode, playerName]);
 
+  // Real-time updates
   useEffect(() => {
     if (!room?.id) return;
 
     const channel = supabase
-      .channel(`room-updates-${room.id}`)
+      .channel(`room-${room.id}`)
       .on(
         'postgres_changes',
         {
@@ -83,12 +147,20 @@ export default function RoomPage() {
           table: 'rooms',
           filter: `id=eq.${room.id}`,
         },
-        (payload) => {
+        async (payload) => {
           const updatedRoom = payload.new as Room;
+          
+          // Reset submission state when slide changes
+          if (prevSlideIndex.current !== updatedRoom.current_slide_index) {
+            setSubmitted(false);
+            prevSlideIndex.current = updatedRoom.current_slide_index;
+          }
+
           setRoom(updatedRoom);
 
+          // Handle results redirection
           if (updatedRoom.current_slide_index === -1) {
-            router.push(`/player/results/${roomCode}`); // or `/results?room=XYZ`
+            router.push(`/player/results/${roomCode}`);
           }
         }
       )
@@ -97,15 +169,24 @@ export default function RoomPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [room?.id, router, roomCode]);
+  }, [room?.id, roomCode, router]);
 
+  // Handle slide changes
+  useEffect(() => {
+    if (room && slides.length > 0 && room.current_slide_index >= slides.length) {
+      router.push(`/player/results/${roomCode}`);
+    }
+  }, [room, slides, roomCode, router]);
+
+  // Fetch player response when slide changes
   useEffect(() => {
     const fetchPlayerResponse = async () => {
       if (!room || !slides.length || !playerName) return;
 
       const currentSlide = slides[room.current_slide_index];
+      if (!currentSlide) return;
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('player_responses')
         .select('*')
         .eq('room_id', room.id)
@@ -113,45 +194,25 @@ export default function RoomPage() {
         .eq('player_name', playerName)
         .maybeSingle();
 
+      setSubmitted(!!data);
       if (data) {
-        setSubmitted(true);
-
         try {
-          let parsed;
-
-          if (currentSlide.questionType === 'multiple_choice') {
-            parsed = data.selected_option;
-          } else if (
-            currentSlide.questionType === 'checkbox' ||
-            currentSlide.questionType === 'scale'
-          ) {
-            parsed = JSON.parse(data.selected_option);
-          }
-
+          const parsed = currentSlide.questionType === 'multiple_choice'
+            ? data.selected_option
+            : JSON.parse(data.selected_option);
           setSelectedOption(parsed);
         } catch {
-          console.warn('Failed to parse stored answer.');
           setSelectedOption(null);
         }
       } else {
-        setSubmitted(false);
-
-        // 👇 Default for scale question is a sequential array of indices
-        if (currentSlide.questionType === 'scale') {
-          setSelectedOption(currentSlide.options.map((_, idx) => idx));
-        } else {
-          setSelectedOption(null);
-        }
-      }
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Failed to fetch previous response:', error.message);
+        setSelectedOption(currentSlide.questionType === 'scale' 
+          ? currentSlide.options.map((_, idx) => idx) 
+          : null);
       }
     };
 
     fetchPlayerResponse();
   }, [room, slides, room?.current_slide_index, playerName]);
-
 
   const handleSubmit = async () => {
     if (!room || !slides.length || selectedOption === null || !playerName) return;
@@ -164,24 +225,22 @@ export default function RoomPage() {
         ? selectedOption
         : JSON.stringify(selectedOption);
 
-    const { error } = await supabase.from('player_responses').upsert(
-      [
-        {
-          room_id: room.id,
-          slide_id: currentSlide.id,
-          player_name: playerName,
-          selected_option: answerPayload,
-        },
-      ],
+    const { error: submissionError } = await supabase.from('player_responses').upsert(
+      {
+        room_id: room.id,
+        slide_id: currentSlide.id,
+        player_name: playerName,
+        selected_option: answerPayload,
+      },
       {
         onConflict: 'room_id,slide_id,player_name',
       }
     );
 
-    if (error) {
-      console.error('Submission error:', error.message);
-    } else {
+    if (!submissionError) {
       setSubmitted(true);
+    } else {
+      console.error('Submission failed:', submissionError);
     }
   };
 
@@ -193,8 +252,7 @@ export default function RoomPage() {
     const newIndex = selectedOption.indexOf(Number(over.id));
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      const newOrder = arrayMove(selectedOption, oldIndex, newIndex);
-      setSelectedOption(newOrder);
+      setSelectedOption(arrayMove(selectedOption, oldIndex, newIndex));
     }
   }
 
@@ -225,162 +283,241 @@ export default function RoomPage() {
     );
   }
 
-  if (loading) return <div className="text-white">Loading...</div>;
-  if (error || !room) return <div className="text-white">{error}</div>;
-
-  if (!playerName) {
+  // Connection status display
+  if (connectionStatus === 'disconnected') {
     return (
-      <div className="text-white p-4">
-        <h2 className="text-xl mb-2">Enter your name to join the room:</h2>
-        <input
-          type="text"
-          value={nameInput}
-          onChange={(e) => setNameInput(e.target.value)}
-          className="text-black p-2 rounded border border-gray-300 mb-2 block w-100"
-          placeholder="Your name"
-        />
-        {nameError && <p className="text-red-500 mb-2">{nameError}</p>}
-        <button
-          onClick={async () => {
-            if (!nameInput.trim()) {
-              setNameError('Name cannot be empty.');
-              return;
-            }
+      <div className="text-white p-4 text-center">
+        <p className="text-red-500">Connection lost. Trying to reconnect...</p>
+      </div>
+    );
+  }
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { data, error } = await supabase
-              .from('player_responses')
-              .select('player_name')
-              .eq('room_id', room.id)
-              .eq('player_name', nameInput.trim());
+  // Render loading/error states
+  if (loading) {
+    return (
+      <div className="text-white p-4 text-center">
+        <p>Loading quiz data...</p>
+        {slides.length === 0 && (
+          <p className="text-sm text-gray-400">This may take a moment...</p>
+        )}
+      </div>
+    );
+  }
 
-            if (data && data.length > 0) {
-              setNameError('That name is already taken in this room. Please choose a different one.');
-            } else {
-              const cleanName = nameInput.trim();
-              localStorage.setItem('player_name', cleanName);
-              setPlayerName(cleanName);
-            }
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+  if (error) {
+    return (
+      <div className="text-white p-4 text-center">
+        <p className="text-red-500">Error: {error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-blue-600 rounded"
         >
-          Join Room
+          Retry
         </button>
       </div>
     );
   }
 
-  if (room.current_slide_index >= slides.length) {
-        router.push(`/player/results/${roomCode}`);
-        return null;
+  if (!room) {
+    return (
+      <div className="text-white p-4 text-center">
+        <p>Room not found</p>
+        <p className="text-sm text-gray-400">Please check the room code</p>
+      </div>
+    );
   }
 
-  const currentSlide = slides[room.current_slide_index];
-  const questionType = currentSlide?.questionType;
+  // Name input form
+  if (!playerName) {
+    return (
+      <div className="text-white p-4 max-w-md mx-auto">
+        <h2 className="text-xl mb-4">Join Quiz Room</h2>
+        <div className="mb-4">
+          <input
+            type="text"
+            value={nameInput}
+            onChange={(e) => {
+              setNameInput(e.target.value);
+              setNameError('');
+            }}
+            className="w-full p-3 rounded border border-gray-300 text-black"
+            placeholder="Enter your name"
+          />
+          {nameError && <p className="text-red-500 mt-1">{nameError}</p>}
+        </div>
+        <button
+          onClick={async () => {
+            if (!nameInput.trim()) {
+              setNameError('Please enter your name');
+              return;
+            }
 
+            try {
+              const { data } = await supabase
+                .from('player_responses')
+                .select('player_name')
+                .eq('room_id', room.id)
+                .eq('player_name', nameInput.trim());
+
+              if (data?.length) {
+                setNameError('Name already taken');
+              } else {
+                const cleanName = nameInput.trim();
+                localStorage.setItem('player_name', cleanName);
+                setPlayerName(cleanName);
+              }
+            } catch (err) {
+              setNameError('Failed to verify name');
+              console.error(err);
+            }
+          }}
+          className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded transition"
+        >
+          Join Game
+        </button>
+      </div>
+    );
+  }
+
+  // Waiting for quiz to start
+  if (!room.has_started) {
+    return (
+      <div className="text-white p-4 text-center">
+        <h2 className="text-xl mb-2">Waiting for host to start</h2>
+        <p className="text-lg font-mono bg-gray-800 p-2 inline-block rounded">
+          Room: {room.room_code}
+        </p>
+        {slides.length === 0 && (
+          <p className="mt-4 text-gray-400">Loading questions...</p>
+        )}
+      </div>
+    );
+  }
+
+  // Current slide handling
+  const currentSlide = slides[room.current_slide_index];
+  if (!currentSlide) {
+    return (
+      <div className="text-white p-4 text-center">
+        <p>Preparing question...</p>
+        <p className="text-sm text-gray-400">
+          {slides.length > 0 ? 'Almost ready!' : 'Waiting for questions...'}
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-blue-600 rounded"
+        >
+          Refresh
+        </button>
+      </div>
+    );
+  }
+
+  const questionType = currentSlide.questionType;
+
+  // Main quiz interface
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="p-4 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Room Code: {room.room_code}</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-xl font-bold">Room: {room.room_code}</h1>
+          <span className="bg-gray-800 px-3 py-1 rounded">
+            Slide {room.current_slide_index + 1} of {slides.length}
+          </span>
+        </div>
 
-        {!room.has_started ? (
-          <p>Waiting for host to start...</p>
-        ) : currentSlide ? (
-          <div className="bg-white p-6 rounded shadow-md">
-            <h2 className="text-xl font-semibold mb-4 text-black">{currentSlide.question}</h2>
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+          <h2 className="text-xl font-semibold mb-4 text-black">{currentSlide.question}</h2>
 
-            {!submitted ? (
-              <>
-                <ul className="space-y-2">
-                  {questionType === 'multiple_choice' &&
-                    currentSlide.options.map((opt, idx) => (
-                      <li key={idx}>
-                        <label className="flex items-center gap-2 cursor-pointer text-black">
-                          <input
-                            type="radio"
-                            name="answer"
-                            value={idx}
-                            checked={selectedOption === idx}
-                            onChange={() => setSelectedOption(idx)}
-                          />
-                          {String.fromCharCode(65 + idx)}) {opt}
-                        </label>
-                      </li>
-                    ))}
+          {!submitted ? (
+            <>
+              <ul className="space-y-2">
+                {questionType === 'multiple_choice' &&
+                  currentSlide.options.map((opt, idx) => (
+                    <li key={idx}>
+                      <label className="flex items-center gap-2 cursor-pointer text-black">
+                        <input
+                          type="radio"
+                          name="answer"
+                          value={idx}
+                          checked={selectedOption === idx}
+                          onChange={() => setSelectedOption(idx)}
+                        />
+                        {String.fromCharCode(65 + idx)}) {opt}
+                      </label>
+                    </li>
+                  ))}
 
-                  {questionType === 'checkbox' &&
-                    currentSlide.options.map((opt, idx) => (
-                      <li key={idx}>
-                        <label className="flex items-center gap-2 cursor-pointer text-black">
-                          <input
-                            type="checkbox"
-                            value={idx}
-                            checked={Array.isArray(selectedOption) && selectedOption.includes(idx)}
-                            onChange={(e) => {
-                              if (!Array.isArray(selectedOption)) {
-                                setSelectedOption([idx]);
-                              } else {
-                                const updated = e.target.checked
-                                  ? [...selectedOption, idx]
-                                  : selectedOption.filter((v) => v !== idx);
-                                setSelectedOption(updated);
-                              }
-                            }}
-                          />
-                          {String.fromCharCode(65 + idx)}) {opt}
-                        </label>
-                      </li>
-                    ))}
+                {questionType === 'checkbox' &&
+                  currentSlide.options.map((opt, idx) => (
+                    <li key={idx}>
+                      <label className="flex items-center gap-2 cursor-pointer text-black">
+                        <input
+                          type="checkbox"
+                          value={idx}
+                          checked={Array.isArray(selectedOption) && selectedOption.includes(idx)}
+                          onChange={(e) => {
+                            if (!Array.isArray(selectedOption)) {
+                              setSelectedOption([idx]);
+                            } else {
+                              const updated = e.target.checked
+                                ? [...selectedOption, idx]
+                                : selectedOption.filter((v) => v !== idx);
+                              setSelectedOption(updated);
+                            }
+                          }}
+                        />
+                        {String.fromCharCode(65 + idx)}) {opt}
+                      </label>
+                    </li>
+                  ))}
 
-                  {questionType === 'scale' && (
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleDragEnd}
+                {questionType === 'scale' && (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={
+                        Array.isArray(selectedOption)
+                          ? selectedOption
+                          : currentSlide.options.map((_, idx) => idx)
+                      }
+                      strategy={verticalListSortingStrategy}
                     >
-                      <SortableContext
-                        items={
-                          Array.isArray(selectedOption)
-                            ? selectedOption
-                            : currentSlide.options.map((_, idx) => idx)
-                        }
-                        strategy={verticalListSortingStrategy}
-                      >
-                        <ul>
-                          {(Array.isArray(selectedOption)
-                            ? selectedOption
-                            : currentSlide.options.map((_, idx) => idx)
-                          ).map((idx) => (
-                            <SortableItem
-                              key={idx}
-                              id={idx}
-                              label={currentSlide.options[idx]}
-                            />
-                          ))}
-                        </ul>
-                      </SortableContext>
-                    </DndContext>
-                  )}
-                </ul>
+                      <ul>
+                        {(Array.isArray(selectedOption)
+                          ? selectedOption
+                          : currentSlide.options.map((_, idx) => idx)
+                        ).map((idx) => (
+                          <SortableItem
+                            key={idx}
+                            id={idx}
+                            label={currentSlide.options[idx]}
+                          />
+                        ))}
+                      </ul>
+                    </SortableContext>
+                  </DndContext>
+                )}
+              </ul>
 
-                <button
-                  onClick={handleSubmit}
-                  disabled={
-                    selectedOption === null ||
-                    (Array.isArray(selectedOption) && selectedOption.length === 0)
-                  }
-                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-                >
-                  Submit
-                </button>
-              </>
-            ) : (
-              <p className="mt-4 text-green-600 font-semibold">Answer submitted!</p>
-            )}
-          </div>
-        ) : (
-          <p>No slide found.</p>
-        )}
+              <button
+                onClick={handleSubmit}
+                disabled={
+                  selectedOption === null ||
+                  (Array.isArray(selectedOption) && selectedOption.length === 0)
+                }
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+              >
+                Submit
+              </button>
+            </>
+          ) : (
+            <p className="mt-4 text-green-600 font-semibold">Answer submitted!</p>
+          )}
+        </div>
       </div>
     </div>
   );

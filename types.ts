@@ -10,15 +10,17 @@ export type Quiz = {
   slides_count?: number;
 };
 
-export type Slide = {
-  id: number;
-  question?: string;
-  questionType: string;
-  options: string[];
-  answer: string | string[] | number | number[];
-  note?: string;
-  quiz_id: string;
-};
+export interface Slide {
+    id: number;
+    question?: string;
+    questionType: string;
+    options: string[];
+    answer: string | string[] | number | number[];
+    note?: string;
+    quiz_id: string;  // Required foreign key
+    host_id: string;  // Required owner reference
+    created_at?: string;
+}
 
 export type State = {
   slides: Slide[];
@@ -26,9 +28,9 @@ export type State = {
 };
 
 export type Action =
-  | { type: 'ADD_SLIDE' }
+  | { type: 'ADD_SLIDE'; payload: Slide }  // Changed - now includes full slide
   | { type: 'SET_ACTIVE_SLIDE'; id: number }
-  | { type: 'UPDATE_SLIDE'; id: number; payload: Partial<Slide> }
+  | { type: 'UPDATE_SLIDE'; id: number; payload: Partial<Omit<Slide, 'quiz_id' | 'host_id'>> }  // More precise payload
   | { type: 'DELETE_SLIDE'; id: number }
   | { type: 'SET_INITIAL_SLIDES'; payload: Slide[] }
 
@@ -39,7 +41,8 @@ export type Room = {
   current_slide_index: number;
   created_at: string;
   has_started?: boolean;
-  // quiz_id?: number;
+  quiz_id: string;
+  host_id: string;
 };
 
 export type PlayerResponse = {

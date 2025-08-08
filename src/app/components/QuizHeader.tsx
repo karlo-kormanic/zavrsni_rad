@@ -1,10 +1,12 @@
+// components/QuizHeader.tsx
 'use client';
 
 import { createRoom } from '@/services/roomService';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
-const QuizHeader = () => {
+const QuizHeader = ({ quizId }: { quizId: string }) => {  // Add quizId prop
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -14,9 +16,13 @@ const QuizHeader = () => {
     setError(null);
 
     try {
-      const room = await createRoom();
+      // Get authenticated user first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
+      // Pass both quizId and hostId
+      const room = await createRoom(quizId, user.id);
       console.log('Room created:', room);
-      // ✅ Redirect to host view
       router.push(`/host/${room.room_code}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
