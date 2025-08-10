@@ -14,6 +14,15 @@ export default function PlayerResultsPage() {
   const [responses, setResponses] = useState<PlayerResponse[]>([]);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [playerName, setPlayerName] = useState<string | null>(null);
+
+  // Load player name from localStorage
+  useEffect(() => {
+    const storedName = localStorage.getItem('player_name');
+    if (storedName) {
+      setPlayerName(storedName);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -60,7 +69,6 @@ export default function PlayerResultsPage() {
     fetchResults();
   }, [roomCode]);
 
-
   useEffect(() => {
     if (slides.length > 0 && responses.length > 0) {
       const scoreMap = calculateScores(slides, responses);
@@ -73,7 +81,11 @@ export default function PlayerResultsPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-center text-white mb-6">Final Results</h1>
-      <Scoreboard scores={scores} isPlayerView />
+      <Scoreboard 
+        scores={scores} 
+        isPlayerView 
+        currentPlayer={playerName} 
+      />
     </div>
   );
 }

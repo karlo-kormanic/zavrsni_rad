@@ -7,6 +7,8 @@ import { Slide, Room } from '@/../../types';
 import Scoreboard from '@/components/Scoreboard';
 import { calculateScores } from '@/lib/calculateScores';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import QRCode from 'qrcode';
+import Image from 'next/image';
 
 function HostRoomPage() {
   const { roomCode } = useParams();
@@ -18,9 +20,19 @@ function HostRoomPage() {
   const [answerStats, setAnswerStats] = useState<Record<number, number>>({});
   const [scores, setScores] = useState<Record<string, number>>({});
   const [showingResults, setShowingResults] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
 
   const roomRef = useRef<Room | null>(null);
   const slidesRef = useRef<Slide[]>([]);
+
+  useEffect(() => {
+    if (room?.room_code) {
+      const joinUrl = `${window.location.origin}/join?room=${room.room_code}`;
+      QRCode.toDataURL(joinUrl)
+        .then(url => setQrCodeUrl(url))
+        .catch(err => console.error('Error generating QR code:', err));
+    }
+  }, [room?.room_code]);
 
   useEffect(() => {
     roomRef.current = room;
@@ -251,12 +263,43 @@ function HostRoomPage() {
       <h1 className="text-2xl font-bold mb-4">Hosting Room: {room.room_code}</h1>
 
       {!room.has_started ? (
-        <button
-          onClick={handleStart}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          Start Quiz
-        </button>
+        <div className="space-y-4">
+          <div className="bg-white p-6 rounded-lg shadow max-w-md">
+            <h2 className="text-lg font-semibold mb-2">Players can join by:</h2>
+            <div className="mb-4">
+              <p className="font-medium">1. Scanning this QR code:</p>
+              {qrCodeUrl && (
+                <div className="mt-2 p-2 bg-white rounded inline-block">
+                  <Image 
+                    src={qrCodeUrl} 
+                    alt="Join Quiz QR Code" 
+                    width={160} // Match your desired display size
+                    height={160}
+                    className="w-40 h-40" // Optional: Tailwind classes for styling
+                    priority // Optional: If this is above the fold/LCP element
+                  />
+                </div>
+              )}
+            </div>
+            <div className="mb-4">
+              <p className="font-medium">2. Entering this code:</p>
+              <p className="text-3xl font-bold text-center my-2">{room.room_code}</p>
+            </div>
+            <div>
+              <p className="font-medium">3. Or using this link:</p>
+              <p className="text-sm text-blue-600 break-all">
+                {window.location.origin}/join?room={room.room_code}
+              </p>
+            </div>
+          </div>
+          
+          <button
+            onClick={handleStart}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Start Quiz
+          </button>
+        </div>
       ) : (
         <>
           {room.current_slide_index !== -1 && (
@@ -321,7 +364,7 @@ function HostRoomPage() {
             </>
           )}
 
-          {showingResults && <Scoreboard scores={scores} />}
+          {showingResults && <Scoreboard scores={scores} isPlayerView={false} />}
         </>
       )}
     </div>

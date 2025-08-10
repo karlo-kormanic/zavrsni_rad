@@ -22,5 +22,8 @@ export async function createRoom(quizId: string, hostId: string) {
   console.log('Room creation response:', { data, error });
   
   if (error) throw error;
-  return data;
+  return {
+    ...data,
+    joinUrl: `${window.location.origin}/join?room=${roomCode}`
+  };
 }
