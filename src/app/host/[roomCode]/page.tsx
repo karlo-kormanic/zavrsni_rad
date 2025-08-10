@@ -27,7 +27,7 @@ function HostRoomPage() {
 
   useEffect(() => {
     if (room?.room_code) {
-      const joinUrl = `${window.location.origin}/join?room=${room.room_code}`;
+      const joinUrl = `${window.location.origin}/room/${room.room_code}`;
       QRCode.toDataURL(joinUrl)
         .then(url => setQrCodeUrl(url))
         .catch(err => console.error('Error generating QR code:', err));
@@ -284,12 +284,6 @@ function HostRoomPage() {
             <div className="mb-4">
               <p className="font-medium">2. Entering this code:</p>
               <p className="text-3xl font-bold text-center my-2">{room.room_code}</p>
-            </div>
-            <div>
-              <p className="font-medium">3. Or using this link:</p>
-              <p className="text-sm text-blue-600 break-all">
-                {window.location.origin}/join?room={room.room_code}
-              </p>
             </div>
           </div>
           
