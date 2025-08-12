@@ -138,7 +138,7 @@ export default function QuizDashboard() {
                 <div>
                   <h3 className="font-bold text-lg">{quiz.title}</h3>
                   <p className="text-gray-600 mt-1">
-                    {quiz.slides_count || 0} questions
+                    {quiz.slides_count || 0} Question{quiz.slides_count !== 1 ? 's' : ''}
                   </p>
                 </div>
                 <span className="text-sm text-gray-500">

@@ -17,6 +17,7 @@ export default function QuestionPrompt({
 }: QuestionPromptProps) {
   const [value, setValue] = useState(initialValue);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [hasChanged, setHasChanged] = useState(false);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -24,10 +25,11 @@ export default function QuestionPrompt({
   useEffect(() => {
     setValue(initialValue);
     setSaveStatus('idle');
+    setHasChanged(false);
   }, [initialValue]);
 
   useEffect(() => {
-    if (value === initialValue) return;
+    if (!hasChanged || value === initialValue) return;
 
     setSaveStatus('saving');
 
@@ -47,9 +49,10 @@ export default function QuestionPrompt({
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
-  }, [value, initialValue, onSave]);
+  }, [value, initialValue, onSave, hasChanged]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!hasChanged) setHasChanged(true);
     setValue(e.target.value);
   };
 

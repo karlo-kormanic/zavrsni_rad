@@ -6,33 +6,50 @@ import { Session, User, AuthError } from '@supabase/supabase-js'
 type AuthContextType = {
   session: Session | null
   user: User | null
+  isLoading: boolean // Add loading state
   signOut: () => Promise<AuthError | null>
 }
 
 const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
+  isLoading: true, // Initial loading state
   signOut: async () => null,
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true) // Track loading state
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-    })
+    let mounted = true
+
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (mounted) {
+        setSession(session)
+        setUser(session?.user ?? null)
+        setIsLoading(false)
+      }
+    }
+
+    getInitialSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
+        if (mounted) {
+          setSession(session)
+          setUser(session?.user ?? null)
+          setIsLoading(false)
+        }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription?.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {
@@ -45,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, signOut }}>
+    <AuthContext.Provider value={{ session, user, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   )

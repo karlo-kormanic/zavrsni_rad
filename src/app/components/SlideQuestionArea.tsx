@@ -34,7 +34,7 @@ const SlideQuestionArea = ({ slide, onUpdate }: SlideQuestionAreaProps) => {
   };
 
   return (
-    <div className="relative h-[55vh] bg-white border border-gray-300 p-4">
+    <div className="relative h-full flex flex-col bg-white border border-gray-300 p-4 overflow-hidden">
       <div className="flex justify-between mb-6">
         <div className="w-1/2 pr-2">
           <QuestionPrompt
@@ -53,52 +53,56 @@ const SlideQuestionArea = ({ slide, onUpdate }: SlideQuestionAreaProps) => {
         </div>
       </div>
 
-      <div className="mb-6">
-        <AnswerEditor
-          initialOptions={slide.options}
-          onUpdate={(newOptions) => onUpdate({ options: newOptions })}
-          optionPrefixPattern={
-            slide.questionType === 'scale' ? (index) => `${index + 1}.` : undefined
-          }
-        />
-
-        {slide.options.filter((opt) => opt.trim() !== '').length > 0 && (
-          <AnswerSelector
-            options={slide.options}
-            selectedAnswer={
-              typeof slide.answer === 'number' ? slide.answer : ''
-            }
-            selectedAnswers={
-              Array.isArray(slide.answer) && slide.answer.every((a) => typeof a === 'number')
-                ? (slide.answer as number[])
-                : []
-            }
-            isMultiSelect={slide.questionType === 'checkbox'}
-            isSortable={slide.questionType === 'scale'}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="mb-6 flex-1 min-h-0 overflow-y-auto">
+          <AnswerEditor
+            initialOptions={slide.options}
+            onUpdate={(newOptions) => onUpdate({ options: newOptions })}
             optionPrefixPattern={
               slide.questionType === 'scale' ? (index) => `${index + 1}.` : undefined
             }
-            onSelect={(value) => {
-              if (slide.questionType === 'checkbox') {
-                onUpdate({ answer: value as number[] }); // indices
-              } else if (slide.questionType === 'multiple_choice') {
-                onUpdate({ answer: value as number });
-              }
-            }}
-            answerOrder={
-              slide.questionType === 'scale' &&
-              Array.isArray(slide.answer) &&
-              slide.answer.every((a) => typeof a === 'number')
-                ? slide.answer as number[]
-                : slide.options.map((_, index) => index) // fallback: original order
-            }
-            setAnswerOrder={(newOrder) => {
-              if (slide.questionType === 'scale') {
-                onUpdate({ answer: newOrder }); // store order as array of indices
-              }
-            }}
           />
-        )}
+
+          {slide.options.filter((opt) => opt.trim() !== '').length > 0 && (
+            <div className="mt-4">
+              <AnswerSelector
+                options={slide.options}
+                selectedAnswer={
+                  typeof slide.answer === 'number' ? slide.answer : ''
+                }
+                selectedAnswers={
+                  Array.isArray(slide.answer) && slide.answer.every((a) => typeof a === 'number')
+                    ? (slide.answer as number[])
+                    : []
+                }
+                isMultiSelect={slide.questionType === 'checkbox'}
+                isSortable={slide.questionType === 'scale'}
+                optionPrefixPattern={
+                  slide.questionType === 'scale' ? (index) => `${index + 1}.` : undefined
+                }
+                onSelect={(value) => {
+                  if (slide.questionType === 'checkbox') {
+                    onUpdate({ answer: value as number[] }); // indices
+                  } else if (slide.questionType === 'multiple_choice') {
+                    onUpdate({ answer: value as number });
+                  }
+                }}
+                answerOrder={
+                  slide.questionType === 'scale' &&
+                  Array.isArray(slide.answer) &&
+                  slide.answer.every((a) => typeof a === 'number')
+                    ? slide.answer as number[]
+                    : slide.options.map((_, index) => index) // fallback: original order
+                }
+                setAnswerOrder={(newOrder) => {
+                  if (slide.questionType === 'scale') {
+                    onUpdate({ answer: newOrder }); // store order as array of indices
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

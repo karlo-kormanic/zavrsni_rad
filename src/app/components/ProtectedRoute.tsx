@@ -1,23 +1,33 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function ProtectedRoute({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
+  const [isChecking, setIsChecking] = useState(true)
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login')
+    if (!isLoading) {
+      if (!user) {
+        router.push('/login')
+      }
+      setIsChecking(false)
     }
-  }, [user, router])
+  }, [user, isLoading, router])
 
-  if (!user) return null
+  if (isLoading || isChecking) {
+    return null // or return a loading spinner
+  }
+
+  if (!user) {
+    return null // Redirect will happen from useEffect
+  }
 
   return <>{children}</>
 }

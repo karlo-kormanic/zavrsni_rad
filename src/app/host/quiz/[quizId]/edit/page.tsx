@@ -29,7 +29,7 @@ export default function EditQuizPage() {
           </div>
           */}
           {/* Slide editor - takes remaining space */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto h-[calc(100vh-4rem)]">
             <SlideEditor quizId={quizId as string} />
           </div>
         </div>

@@ -2,14 +2,20 @@
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { useEffect } from 'react'
 
 export default function LoginPage() {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
 
-  if (user) {
-    router.push('/host/dashboard')
-    return null
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/host/dashboard')
+    }
+  }, [user, isLoading, router])
+
+  if (isLoading || user) {
+    return null // or return a loading spinner
   }
 
   return (

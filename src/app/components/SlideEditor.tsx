@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { reducer } from '@/reducers/SlideReducer';
+import { useRouter } from 'next/navigation';
 import NoteArea from "@/components/NoteArea";
 import SlideQuestionArea from "@/components/SlideQuestionArea";
 import QuizHeader from "@/components/QuizHeader";
@@ -14,10 +15,82 @@ interface SlideEditorProps {
 }
 
 const SlideEditor = ({ quizId }: SlideEditorProps) => {
+    const router = useRouter();
+    const [authChecked, setAuthChecked] = useState(false);
+    const [quizTitle, setQuizTitle] = useState('Loading quiz...');
     const [state, dispatch] = useReducer(reducer, { 
         slides: [],
         activeSlideId: null,
     });
+
+    // 1. Check authentication first
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user }, error } = await supabase.auth.getUser();
+            
+            if (error || !user) {
+                router.push('/login');
+                return;
+            }
+            
+            setAuthChecked(true);
+        };
+
+        checkAuth();
+    }, [router]);
+
+    // 2. Load data after auth is confirmed
+    useEffect(() => {
+        if (!authChecked) return;
+
+        const loadAllData = async () => {
+            try {
+                // Fetch quiz title and slides in parallel
+                const [{ data: quizData }, slides] = await Promise.all([
+                    supabase
+                        .from('quizzes')
+                        .select('title')
+                        .eq('id', quizId)
+                        .single(),
+                    fetchSlides(quizId)
+                ]);
+
+                setQuizTitle(quizData?.title || 'Untitled Quiz');
+                dispatch({ type: 'SET_INITIAL_SLIDES', payload: slides });
+
+                // Debug log
+                const { data } = await supabase
+                    .from('slides')
+                    .select('id,quiz_id,question')
+                    .eq('quiz_id', quizId);
+                console.log('Host-side slides:', data);
+            } catch (error) {
+                console.error('Failed to load data:', {
+                    error,
+                    quizId,
+                    stack: new Error().stack
+                });
+                router.push('/dashboard');
+            }
+        };
+
+        loadAllData();
+    }, [quizId, authChecked, router]);
+
+    const updateQuizTitle = async (newTitle: string) => {
+        try {
+            const { error } = await supabase
+                .from('quizzes')
+                .update({ title: newTitle })
+                .eq('id', quizId);
+
+            if (error) throw error;
+            setQuizTitle(newTitle);
+        } catch (error) {
+            console.error('Failed to update quiz title:', error);
+            throw error;
+        }
+    };
 
     const activeSlide = state.slides.find((s) => s.id === state.activeSlideId);
 
@@ -57,37 +130,9 @@ const SlideEditor = ({ quizId }: SlideEditorProps) => {
         }
     };
 
-    useEffect(() => {
-        const loadSlides = async () => {
-            try {
-            console.log('Fetching slides for quiz:', quizId); // Debug log
-            const slides = await fetchSlides(quizId);
-            console.log('Received slides:', slides); // Debug log
-            dispatch({ type: 'SET_INITIAL_SLIDES', payload: slides });
-            } catch (error) {
-            console.error('Failed to load slides:', {
-                error,
-                quizId,
-                stack: new Error().stack // Get call stack
-            });
-            }
-        };
-
-
-        loadSlides();
-    }, [quizId]); // Added quizId as dependency
-
-    useEffect(() => {
-        const logSlides = async () => {
-            const { data } = await supabase
-            .from('slides')
-            .select('id,quiz_id,question')
-            .eq('quiz_id', quizId); // quizId from props
-            
-            console.log('Host-side slides:', data);
-        };
-        logSlides();
-    }, [quizId]);
+    if (!authChecked) {
+        return <div>Checking authentication...</div>;
+    }
 
     return (
         <div className="h-[84vh] col-span-17 bg-white border border-gray-300 flex">
@@ -104,8 +149,8 @@ const SlideEditor = ({ quizId }: SlideEditorProps) => {
                     }}
                 />
             </div>
-            <div className="flex-1 grid grid-rows-[auto_1fr_auto_auto] p-3 gap-3">
-                <QuizHeader quizId={quizId} />
+            <div className="flex-1 grid grid-rows-[auto_minmax(0,1fr)_auto] p-3 gap-3">
+                <QuizHeader quizId={quizId} quizTitle={quizTitle} onTitleUpdate={updateQuizTitle} />
                 {activeSlide && (
                     <SlideQuestionArea
                         slide={activeSlide}
@@ -115,7 +160,7 @@ const SlideEditor = ({ quizId }: SlideEditorProps) => {
                                 await saveSlide(updatedSlide);
                                 dispatch({ 
                                     type: 'UPDATE_SLIDE', 
-                                    id: activeSlide.id, // Fixed: using activeSlide.id
+                                    id: activeSlide.id,
                                     payload 
                                 });
                             } catch (error) {
@@ -144,7 +189,7 @@ const SlideEditor = ({ quizId }: SlideEditorProps) => {
                 )}
             </div>
         </div>
-    )
-}
+    );
+};
 
 export default SlideEditor;

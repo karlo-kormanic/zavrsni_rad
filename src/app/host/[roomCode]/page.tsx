@@ -273,9 +273,9 @@ function HostRoomPage() {
                   <Image 
                     src={qrCodeUrl} 
                     alt="Join Quiz QR Code" 
-                    width={160} // Match your desired display size
-                    height={160}
-                    className="w-40 h-40" // Optional: Tailwind classes for styling
+                    width={200} // Match your desired display size
+                    height={200}
+                    className="w-50 h-50" // Optional: Tailwind classes for styling
                     priority // Optional: If this is above the fold/LCP element
                   />
                 </div>
@@ -283,7 +283,7 @@ function HostRoomPage() {
             </div>
             <div className="mb-4">
               <p className="font-medium">2. Entering this code:</p>
-              <p className="text-3xl font-bold text-center my-2">{room.room_code}</p>
+              <p className="text-3xl font-bold p-2 pl-8 my-2">{room.room_code}</p>
             </div>
           </div>
           
@@ -321,7 +321,7 @@ function HostRoomPage() {
               </div>
 
               <div className="mb-4">
-                <p className="text-lg font-semibold text-white">
+                <p className="text-lg font-semibold text-black">
                   {players.length} player{players.length === 1 ? '' : 's'} answered the question
                 </p>
                 <ul className="list-disc list-inside text-white">

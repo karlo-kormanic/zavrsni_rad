@@ -12,17 +12,14 @@ interface OptionInputProps {
   option: string;
   prefix: string;
   onChange: (value: string) => void;
+  onRemove: () => void;
 }
 
 interface AddOptionButtonProps {
   onClick: () => void;
 }
 
-interface RemoveOptionButtonProps {
-  onClick: () => void;
-}
-
-const OptionInput = ({ index, option, prefix, onChange }: OptionInputProps) => (
+const OptionInput = ({ index, option, prefix, onChange, onRemove }: OptionInputProps) => (
   <div className="flex items-center gap-2">
     <span className="w-6 text-gray-500 font-medium">{prefix}</span>
     <input
@@ -32,6 +29,14 @@ const OptionInput = ({ index, option, prefix, onChange }: OptionInputProps) => (
       className="flex-1 p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-transparent"
       placeholder={`Option ${index + 1}`}
     />
+    <button
+      type="button"
+      onClick={onRemove}
+      className="p-2 text-gray-500 hover:text-red-500 transition-colors"
+      title="Remove option"
+    >
+      ×
+    </button>
   </div>
 );
 
@@ -42,16 +47,6 @@ const AddOptionButton = ({ onClick }: AddOptionButtonProps) => (
     className="mt-3 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
   >
     + Add New Option
-  </button>
-);
-
-const RemoveOptionButton = ({ onClick }: RemoveOptionButtonProps) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="mt-3 px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-  >
-    + Remove Last Option
   </button>
 );
 
@@ -70,10 +65,12 @@ export function AnswerEditor({
     onUpdate([...initialOptions, '']);
   };
 
-  const removeOption = () => {
-    if (initialOptions.length === 0) return;
-    onUpdate(initialOptions.slice(0, -1));
-  }
+  const removeOption = (index: number) => {
+    if (initialOptions.length <= 1) return; // Keep at least one option
+    const updated = [...initialOptions];
+    updated.splice(index, 1);
+    onUpdate(updated);
+  };
 
   return (
     <>
@@ -85,12 +82,12 @@ export function AnswerEditor({
             option={option}
             prefix={optionPrefixPattern(index)}
             onChange={(value) => handleChange(index, value)}
+            onRemove={() => removeOption(index)}
           />
         ))}
       </div>
       <div className="flex mt-3 gap-5">
         <AddOptionButton onClick={addOption} />
-        <RemoveOptionButton onClick={removeOption} />
       </div>
     </>
   );

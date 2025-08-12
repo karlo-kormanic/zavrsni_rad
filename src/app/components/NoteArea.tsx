@@ -5,7 +5,7 @@ type NoteAreaProps = {
 
 const NoteArea = ({ note, onChange }: NoteAreaProps) => {
   return (
-    <div className="h-[15vh] bg-gray-50 border border-gray-300 p-2 rounded">
+    <div className="h-[10vh] bg-gray-50 border border-gray-300 p-2 rounded">
       <textarea
         value={note}
         onChange={(e) => onChange(e.target.value)}
