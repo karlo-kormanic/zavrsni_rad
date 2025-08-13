@@ -42,7 +42,13 @@ const QuizHeader = ({ quizId, quizTitle, onTitleUpdate }: QuizHeaderProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
       
-      const room = await createRoom(quizId, user.id);
+      const room = await createRoom({
+      quizId,
+      hostId: user.id,
+      winnerCount: 1,
+      autoAdvance: false,
+      slideDuration: 30
+      });
       router.push(`/host/${room.room_code}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';

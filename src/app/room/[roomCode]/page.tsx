@@ -330,7 +330,7 @@ export default function RoomPage() {
   // Name input form
   if (!playerName) {
     return (
-      <div className="text-white p-4 max-w-md mx-auto">
+      <div className="text-black p-4 max-w-md mx-auto">
         <h2 className="text-xl mb-4">Join Quiz Room</h2>
         <div className="mb-4">
           <input
@@ -371,7 +371,7 @@ export default function RoomPage() {
               console.error(err);
             }
           }}
-          className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded transition"
+          className="w-full py-3 text-white bg-blue-600 hover:bg-blue-700 rounded transition"
         >
           Join Game
         </button>
@@ -382,9 +382,9 @@ export default function RoomPage() {
   // Waiting for quiz to start
   if (!room.has_started) {
     return (
-      <div className="text-white p-4 text-center">
-        <h2 className="text-xl mb-2">Waiting for host to start</h2>
-        <p className="text-lg font-mono bg-gray-800 p-2 inline-block rounded">
+      <div className="text-black p-4 text-center">
+        <h2 className="text-xl mb-2">Waiting for the host to start the quiz.</h2>
+        <p className="text-lg text-white font-mono bg-gray-800 p-2 inline-block rounded">
           Room: {room.room_code}
         </p>
         {slides.length === 0 && (

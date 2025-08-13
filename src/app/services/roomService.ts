@@ -1,9 +1,20 @@
 import { supabase } from '@/lib/supabaseClient';
 
-export async function createRoom(quizId: string, hostId: string) {
+interface CreateRoomParams {
+  quizId: string;
+  hostId: string;
+  winnerCount?: number;
+  autoAdvance?: boolean;
+  slideDuration?: number;
+}
 
-  console.log('Creating room with:', { quizId, hostId });
-
+export async function createRoom({
+  quizId,
+  hostId,
+  winnerCount = 1,
+  autoAdvance = false,
+  slideDuration = 30
+}: CreateRoomParams) {
   const roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
   
   const { data, error } = await supabase
@@ -14,12 +25,13 @@ export async function createRoom(quizId: string, hostId: string) {
       current_slide_index: 0,
       has_started: false,
       quiz_id: quizId,
-      host_id: hostId
+      host_id: hostId,
+      winner_count: winnerCount,
+      auto_advance: autoAdvance,
+      slide_duration: slideDuration
     })
     .select()
     .single();
-  
-  console.log('Room creation response:', { data, error });
   
   if (error) throw error;
   return {

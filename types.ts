@@ -35,7 +35,7 @@ export type Action =
   | { type: 'SET_INITIAL_SLIDES'; payload: Slide[] }
 
 export type Room = {
-  id: number;
+  id: string;
   room_code: string;
   status: string;
   current_slide_index: number;
@@ -43,6 +43,9 @@ export type Room = {
   has_started?: boolean;
   quiz_id: string;
   host_id: string;
+  winner_count: number;
+  auto_advance: boolean; 
+  slide_duration: number; 
 };
 
 export type PlayerResponse = {
