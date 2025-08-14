@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import type { Room, Slide } from '@/../../types';
+import CountdownBar from '@/components/CountdownBar';
 import {
   DndContext,
   closestCenter,
@@ -428,6 +429,13 @@ export default function RoomPage() {
 
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold mb-4 text-black">{currentSlide.question}</h2>
+          {room?.auto_advance && room?.has_started && room.current_slide_index !== -1 && (
+            <CountdownBar 
+              key={`countdown-${room.current_slide_index}`}
+              duration={room.slide_duration}
+              active={room.auto_advance}
+            />
+          )}
 
           {!submitted ? (
             <>

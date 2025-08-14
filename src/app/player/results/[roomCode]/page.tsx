@@ -113,73 +113,86 @@ export default function PlayerResultsPage() {
 
   if (loading || !room) return <div className="p-6 text-white">Loading...</div>;
 
+  const won = isWinner();
+  const showWinnerForm = won && !winnerInfoSubmitted;
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-center text-black mb-6">Final Results</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Scoreboard 
-          scores={scores} 
-          isPlayerView 
-          currentPlayer={playerName} 
-        />
+      {won ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Scoreboard 
+            scores={scores} 
+            isPlayerView 
+            currentPlayer={playerName} 
+          />
 
-        {isWinner() && !winnerInfoSubmitted && (
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Congratulations! 🎉</h2>
-            <p className="text-gray-300 mb-4">You won! Please provide your information to receive your reward:</p>
-            
-            <form onSubmit={handleWinnerSubmit} className="space-y-4">
-              <div>
-                <label className="block text-gray-300 mb-1">First Name</label>
-                <input
-                  type="text"
-                  value={winnerInfo.firstName}
-                  onChange={(e) => setWinnerInfo({...winnerInfo, firstName: e.target.value})}
-                  className="w-full p-2 bg-gray-700 text-white rounded border border-gray-600"
-                  required
-                />
-              </div>
+          {showWinnerForm ? (
+            <div className="bg-gray-800 rounded-lg p-6">
+              <h2 className="text-xl text-center font-semibold text-white mb-4">Congratulations! 🎉</h2>
+              <p className="text-gray-300 mb-4">You won! Please provide your information to receive your reward:</p>
               
-              <div>
-                <label className="block text-gray-300 mb-1">Last Name</label>
-                <input
-                  type="text"
-                  value={winnerInfo.lastName}
-                  onChange={(e) => setWinnerInfo({...winnerInfo, lastName: e.target.value})}
-                  className="w-full p-2 bg-gray-700 text-white rounded border border-gray-600"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-gray-300 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={winnerInfo.email}
-                  onChange={(e) => setWinnerInfo({...winnerInfo, email: e.target.value})}
-                  className="w-full p-2 bg-gray-700 text-white rounded border border-gray-600"
-                  required
-                />
-              </div>
-              
-              <button
-                type="submit"
-                className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                Submit Information
-              </button>
-            </form>
+              <form onSubmit={handleWinnerSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-gray-300 mb-1">First Name:</label>
+                  <input
+                    type="text"
+                    value={winnerInfo.firstName}
+                    onChange={(e) => setWinnerInfo({...winnerInfo, firstName: e.target.value})}
+                    className="w-full p-2 bg-gray-700 text-white rounded border border-gray-600"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-1">Last Name:</label>
+                  <input
+                    type="text"
+                    value={winnerInfo.lastName}
+                    onChange={(e) => setWinnerInfo({...winnerInfo, lastName: e.target.value})}
+                    className="w-full p-2 bg-gray-700 text-white rounded border border-gray-600"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-1">Email:</label>
+                  <input
+                    type="email"
+                    value={winnerInfo.email}
+                    onChange={(e) => setWinnerInfo({...winnerInfo, email: e.target.value})}
+                    className="w-full p-2 bg-gray-700 text-white rounded border border-gray-600"
+                    required
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  Submit Information
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="bg-gray-800 rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">Thank you!</h2>
+              <p className="text-gray-300">Your information has been submitted successfully.</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex justify-center">
+          <div className="w-full max-w-md">
+            <Scoreboard 
+              scores={scores} 
+              isPlayerView 
+              currentPlayer={playerName} 
+            />
           </div>
-        )}
-
-        {isWinner() && winnerInfoSubmitted && (
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Thank you!</h2>
-            <p className="text-gray-300">Your information has been submitted successfully.</p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

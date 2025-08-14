@@ -21,7 +21,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
 
   return (
     <div className={`rounded-lg p-6 ${isPlayerView ? 'bg-gray-800' : 'bg-white shadow'}`}>
-      <h2 className={`text-xl font-semibold mb-4 ${isPlayerView ? 'text-white' : 'text-gray-800'}`}>
+      <h2 className={`text-center text-xl font-semibold mb-4 ${isPlayerView ? 'text-white' : 'text-gray-800'}`}>
         {isPlayerView ? 'Your Results' : 'Leaderboard'}
       </h2>
       

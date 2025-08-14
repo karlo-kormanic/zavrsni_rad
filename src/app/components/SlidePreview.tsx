@@ -22,7 +22,7 @@ const SlidePreview = ({
   const handleDelete = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     setDeletingId(id);
-    if (window.confirm('Are you sure you want to delete this slide?')) {
+    if (window.confirm('Are you sure you want to delete this question?')) {
       onRemoveSlide(id);
     }
     setDeletingId(null);

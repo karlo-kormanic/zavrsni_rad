@@ -7,6 +7,7 @@ import { Slide, Room } from '@/../../types';
 import Scoreboard from '@/components/Scoreboard';
 import { calculateScores } from '@/lib/calculateScores';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import CountdownBar from '@/components/CountdownBar';
 import QRCode from 'qrcode';
 import Image from 'next/image';
 
@@ -170,70 +171,87 @@ function HostRoomPage() {
     };
   }, [room?.id]);
 
-  const changeSlide = useCallback(async (delta: number) => {
-    if (!room || changingSlide) return;
+  const calculateScoresAndShow = useCallback(async () => {
+  if (!room) return;
 
-    setChangingSlide(true);
+  try {
+    const { data: responses, error } = await supabase
+      .from('player_responses')
+      .select('player_name, slide_id, selected_option')
+      .eq('room_id', room.id);
 
-    try {
-      // Get the latest room state to avoid race conditions
-      const { data: latestRoom, error: fetchError } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('id', room.id)
-        .single();
+    if (error || !responses) throw error;
 
-      if (fetchError || !latestRoom) {
-        console.error('Failed to fetch latest room state:', fetchError?.message);
-        setChangingSlide(false);
-        return;
-      }
+    const scoreMap = calculateScores(slides, responses);
+    setScores(scoreMap);
+    setShowingResults(true);
 
-      const newIndex = Math.min(
-        Math.max(0, latestRoom.current_slide_index + delta),
-        slides.length - 1
-      );
+    await supabase
+      .from('rooms')
+      .update({ current_slide_index: -1 })
+      .eq('id', room.id);
+  } catch (error) {
+    console.error('Failed to calculate scores:', error);
+  }
+}, [room, slides]);
 
-      if (newIndex === latestRoom.current_slide_index) {
-        setChangingSlide(false);
-        return;
-      }
+const changeSlide = useCallback(async (delta: number) => {
+  if (!room || changingSlide) return;
 
-      const { error } = await supabase
-        .from('rooms')
-        .update({ current_slide_index: newIndex })
-        .eq('id', room.id);
+  setChangingSlide(true);
 
-      if (error) {
-        console.error('Slide update error:', error.message);
-        setChangingSlide(false);
-        return;
-      }
+  try {
+    const newIndex = Math.min(
+      Math.max(0, room.current_slide_index + delta),
+      slides.length - 1
+    );
 
-      setRoom(prev => 
-        prev ? { ...prev, current_slide_index: newIndex } : prev
-      );
-    } catch (error) {
-      console.error('Failed to change slide:', error);
-    } finally {
+    if (newIndex === room.current_slide_index) {
       setChangingSlide(false);
+      return;
     }
-  }, [room, changingSlide, slides.length]);
+
+    const { error } = await supabase
+      .from('rooms')
+      .update({ current_slide_index: newIndex })
+      .eq('id', room.id);
+
+    if (error) throw error;
+
+    setRoom(prev => ({
+      ...prev!,
+      current_slide_index: newIndex
+    }));
+  } catch (error) {
+    console.error('Failed to change slide:', error);
+  } finally {
+    setChangingSlide(false);
+  }
+}, [room, changingSlide, slides.length]);
 
   // Set up auto-advance timer
   useEffect(() => {
-    if (room?.auto_advance && room.has_started && room.current_slide_index !== -1) {
-      autoAdvanceIntervalRef.current = setInterval(() => {
-        changeSlide(1);
-      }, room.slide_duration * 1000);
+    if (!room?.auto_advance || !room.has_started || room.current_slide_index === -1) return;
 
-      return () => {
-        if (autoAdvanceIntervalRef.current) {
-          clearInterval(autoAdvanceIntervalRef.current);
-        }
-      };
+    // Clear any existing interval
+    if (autoAdvanceIntervalRef.current) {
+      clearInterval(autoAdvanceIntervalRef.current);
     }
-  }, [room?.auto_advance, room?.has_started, room?.current_slide_index, room?.slide_duration, changeSlide]);
+
+    autoAdvanceIntervalRef.current = setInterval(() => {
+      if (room.current_slide_index < slides.length - 1) {
+        changeSlide(1);
+      } else {
+        calculateScoresAndShow();
+      }
+    }, room.slide_duration * 1000);
+
+    return () => {
+      if (autoAdvanceIntervalRef.current) {
+        clearInterval(autoAdvanceIntervalRef.current);
+      }
+    };
+  }, [room?.auto_advance, room?.has_started, room?.current_slide_index, room?.slide_duration, changeSlide, calculateScoresAndShow, slides.length]);
 
   const handleStartQuiz = async () => {
     if (!room) return;
@@ -300,52 +318,28 @@ function HostRoomPage() {
       }));
     }
   };
-
-  const calculateScoresAndShow = async () => {
-    if (!room) return;
-
-    try {
-      const { data: responses, error } = await supabase
-        .from('player_responses')
-        .select('player_name, slide_id, selected_option')
-        .eq('room_id', room.id);
-
-      if (error || !responses) throw error;
-
-      const scoreMap = calculateScores(slides, responses);
-      setScores(scoreMap);
-      setShowingResults(true);
-
-      await supabase
-        .from('rooms')
-        .update({ current_slide_index: -1 })
-        .eq('id', room.id);
-    } catch (error) {
-      console.error('Failed to calculate scores:', error);
-    }
-  };
-
+  
   if (loading || !room) return <div className="p-6">Loading...</div>;
 
   const currentSlide = slides[room.current_slide_index];
 
   return (
-    <div className="p-6">
+    <div className="p-6 flex flex-col items-center">
       <h1 className="text-2xl font-bold mb-4">Hosting Room: {room.room_code}</h1>
 
       {!room.has_started ? (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow max-w-md">
-            <h2 className="text-lg font-semibold mb-4">Quiz Settings</h2>
+        <div className="space-y-6 space-x-6">
+          <div className="bg-white p-6 rounded-lg shadow max-w-md w-full">
+            <h2 className="text-lg flex justify-center font-semibold mb-4">Quiz Settings</h2>
             
-            <div className="mb-4">
+            <div className="mb-4 pt-4">
               <label className="block font-medium mb-2">Number of Winners</label>
               <input
                 type="number"
                 min="1"
                 value={winnerCount}
                 onChange={(e) => setWinnerCount(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded mx-auto block"
               />
             </div>
             
@@ -361,7 +355,7 @@ function HostRoomPage() {
             
             {autoAdvance && (
               <div>
-                <label className="block font-medium mb-2">Seconds per slide</label>
+                <label className="block font-medium mb-2 p">Seconds per slide</label>
                 <input
                   type="number"
                   min="5"
@@ -374,32 +368,34 @@ function HostRoomPage() {
             )}
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow max-w-md">
-            <h2 className="text-lg font-semibold mb-2">Players can join by:</h2>
+          <div className="bg-white p-6 w-130 rounded-lg shadow max-w-md">
+            <h2 className="text-lg font-semibold mb-2 text-center pb-6">Players can join by:</h2>
             <div className="mb-4">
-              <p className="font-medium">1. Scanning this QR code:</p>
+              <p className="text-center font-medium">1. Scanning this QR code</p>
               {qrCodeUrl && (
-                <div className="mt-2 p-2 bg-white rounded inline-block">
-                  <Image 
-                    src={qrCodeUrl} 
-                    alt="Join Quiz QR Code" 
-                    width={200}
-                    height={200}
-                    priority
-                  />
+                <div className="mt-1 flex justify-center">
+                  <div className="p-1 bg-white rounded inline-block">
+                    <Image 
+                      src={qrCodeUrl} 
+                      alt="Join Quiz QR Code" 
+                      width={200}
+                      height={200}
+                      priority
+                    />
+                  </div>
                 </div>
               )}
             </div>
             <div className="mb-4">
-              <p className="font-medium">2. Entering this code:</p>
-              <p className="text-3xl font-bold p-2 pl-8 my-2">{room.room_code}</p>
+              <p className="text-center font-medium">2. Entering this room code</p>
+              <p className="text-3xl text-center font-bold p-2 my-2">{room.room_code}</p>
             </div>
           </div>
           
           <button
             onClick={handleStartQuiz}
             disabled={loading}
-            className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 mx-auto block"
           >
             {loading ? 'Starting...' : 'Start Quiz'}
           </button>
@@ -408,7 +404,7 @@ function HostRoomPage() {
         <>
           {room.current_slide_index !== -1 && (
             <>
-              <div className="bg-white p-6 rounded shadow mb-4 max-w-xl">
+              <div className="bg-white p-6 rounded shadow mb-4 w-130 max-w-xl">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-700 text-sm">
                     Slide {room.current_slide_index + 1} of {slides.length}
@@ -434,6 +430,15 @@ function HostRoomPage() {
                             <option key={sec} value={sec}>{sec}s</option>
                           ))}
                         </select>
+                      )}
+                      {room.auto_advance && room.has_started && room.current_slide_index !== -1 && (
+                        <div className="mt-3">
+                          <CountdownBar 
+                            duration={room.slide_duration}
+                            active={room.auto_advance}
+                            onComplete={room.current_slide_index < slides.length - 1 ? changeSlide.bind(null, 1) : undefined}
+                          />
+                        </div>
                       )}
                     </div>
                   )}
@@ -494,11 +499,13 @@ function HostRoomPage() {
           )}
 
           {showingResults && (
-            <Scoreboard 
-              scores={scores} 
-              isPlayerView={false} 
-              winnerCount={room.winner_count || 1}
-            />
+            <div className="w-full max-w-[50%] mx-auto">
+              <Scoreboard 
+                scores={scores} 
+                isPlayerView={false} 
+                winnerCount={room.winner_count || 1}
+              />
+            </div>
           )}
         </>
       )}

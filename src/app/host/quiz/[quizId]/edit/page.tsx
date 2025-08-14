@@ -4,6 +4,7 @@ import TemplatePreview from '@/components/TemplatePreview' */
 import { useParams } from 'next/navigation'
 import SlideEditor from '@/components/SlideEditor'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import UserMenu from '@/components/UserMenu'
 
 export default function EditQuizPage() {
   const { quizId } = useParams()
@@ -12,8 +13,9 @@ export default function EditQuizPage() {
     <ProtectedRoute>
       <div className="fixed inset-0 flex flex-col bg-white text-gray-500 overflow-hidden">
         {/* Quiz creator header */}
-        <div className="h-16 flex items-center flex-shrink-0 px-8 border-b border-gray-300">
-          <h1 className="text-lg font-medium">Quiz creator</h1>
+        <div className="w-screen mx-auto pl-4 pr-5 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-black font-medium">QuizMe - Quiz creator</h1>
+          <UserMenu />
         </div>
 
         {/* Main content area */}

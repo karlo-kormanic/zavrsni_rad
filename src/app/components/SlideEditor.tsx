@@ -116,6 +116,8 @@ const SlideEditor = ({ quizId }: SlideEditorProps) => {
 
             if (error) throw error;
             dispatch({ type: 'ADD_SLIDE', payload: savedSlide });
+
+            dispatch({ type: 'SET_ACTIVE_SLIDE', id: savedSlide.id });
         } catch (error) {
             console.error('Failed to add slide:', error);
         }

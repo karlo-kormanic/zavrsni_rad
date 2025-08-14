@@ -7,8 +7,8 @@ export default function HostLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex flex-col">
       {/* Navigation Bar */}
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-xl font-bold">QuizMaster Host</h1>
+        <div className="container mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-bold font-medium">QuizMe</h1>
           <UserMenu />
         </div>
       </header>

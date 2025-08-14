@@ -9,9 +9,10 @@ export default function QuizDashboard() {
   const [loading, setLoading] = useState(true)
   const [newQuizTitle, setNewQuizTitle] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const router = useRouter()
 
-  // Fetch quizzes with slide counts (corrected query)
+  // Fetch quizzes with slide counts
   useEffect(() => {
     const fetchQuizzes = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -20,7 +21,6 @@ export default function QuizDashboard() {
         return
       }
 
-      // First get quizzes
       const { data: quizzesData, error: quizzesError } = await supabase
         .from('quizzes')
         .select('*')
@@ -33,7 +33,6 @@ export default function QuizDashboard() {
         return
       }
 
-      // Then get slide counts for each quiz
       const quizzesWithCounts = await Promise.all(
         (quizzesData || []).map(async (quiz) => {
           const { count } = await supabase
@@ -77,15 +76,16 @@ export default function QuizDashboard() {
     if (error) {
       console.error('Error creating quiz:', error)
     } else {
-      // Create default first slide (multiple choice)
+      // Create default first slide
       const { error: slideError } = await supabase
         .from('slides')
         .insert({
           quiz_id: quiz.id,
           host_id: user.id,
           questionType: 'multiple_choice',
-          options: ['Option 1', 'Option 2'],
-          answer: 0
+          options: ['', '', '', ''],
+          answer: 0,
+          note: '',
         })
 
       if (slideError) {
@@ -96,15 +96,51 @@ export default function QuizDashboard() {
     setIsCreating(false)
   }
 
+  const deleteQuiz = async (quizId: string) => {
+    setDeletingId(quizId)
+    try {
+      // First delete all slides (due to foreign key constraints)
+      const { error: slidesError } = await supabase
+        .from('slides')
+        .delete()
+        .eq('quiz_id', quizId)
+
+      if (slidesError) throw slidesError
+
+      // Then delete the quiz
+      const { error: quizError } = await supabase
+        .from('quizzes')
+        .delete()
+        .eq('id', quizId)
+
+      if (quizError) throw quizError
+
+      // Update local state
+      setQuizzes(quizzes.filter(q => q.id !== quizId))
+    } catch (error) {
+      console.error('Error deleting quiz:', error)
+      alert('Failed to delete quiz. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  const handleDelete = (e: React.MouseEvent, quizId: string) => {
+    e.stopPropagation()
+    if (window.confirm('Are you sure you want to delete this quiz and all its questions?')) {
+      deleteQuiz(quizId)
+    }
+  }
+
   if (loading) return <div className="p-4">Loading quizzes...</div>
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Your Quiz Sets</h1>
+      <h1 className="text-2xl font-bold mb-6">Your Quizzes</h1>
       
       {/* Create New Quiz */}
       <div className="mb-8 p-4 bg-gray-50 rounded-lg">
-        <h2 className="text-lg font-semibold mb-2">Create New Quiz Set</h2>
+        <h2 className="text-lg font-semibold mb-2">Create a new quiz:</h2>
         <div className="flex gap-2">
           <input
             type="text"
@@ -126,13 +162,13 @@ export default function QuizDashboard() {
       {/* Quizzes List */}
       <div className="space-y-4">
         {quizzes.length === 0 ? (
-          <p className="text-gray-500">No quiz sets found. Create your first one!</p>
+          <p className="text-gray-500">No quizzes found. Create your first one!</p>
         ) : (
           quizzes.map((quiz) => (
             <div 
               key={quiz.id}
               onClick={() => router.push(`/host/quiz/${quiz.id}/edit`)}
-              className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition"
+              className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition relative"
             >
               <div className="flex justify-between items-start">
                 <div>
@@ -141,10 +177,33 @@ export default function QuizDashboard() {
                     {quiz.slides_count || 0} Question{quiz.slides_count !== 1 ? 's' : ''}
                   </p>
                 </div>
-                <span className="text-sm text-gray-500">
+                <span className="absolute right-12 top-4 text-sm text-gray-500">
                   {new Date(quiz.created_at).toLocaleDateString()}
                 </span>
               </div>
+              
+              {/* Delete button */}
+              <button
+                onClick={(e) => handleDelete(e, quiz.id)}
+                disabled={deletingId === quiz.id}
+                className="absolute right-3 top-4 text-red-500 hover:text-red-700 disabled:opacity-50"
+                aria-label="Delete quiz"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-5 w-5" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
+                  />
+                </svg>
+              </button>
             </div>
           ))
         )}
