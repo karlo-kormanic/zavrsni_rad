@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import SlideEditor from '@/components/SlideEditor'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import UserMenu from '@/components/UserMenu'
+import Link from 'next/link'
 
 export default function EditQuizPage() {
   const { quizId } = useParams()
@@ -14,7 +15,9 @@ export default function EditQuizPage() {
       <div className="fixed inset-0 flex flex-col bg-white text-gray-500 overflow-hidden">
         {/* Quiz creator header */}
         <div className="w-screen mx-auto pl-4 pr-5 py-3 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-black font-medium">QuizMe - Quiz creator</h1>
+          <Link href="/host/dashboard" className="text-xl font-bold font-medium hover:text-blue-600 transition-colors">
+            QuizMe - Quiz creator
+          </Link>
           <UserMenu />
         </div>
 

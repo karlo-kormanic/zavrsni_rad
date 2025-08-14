@@ -21,6 +21,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import PlayerLayout from '@/components/PlayerLayout'
 
 export default function RoomPage() {
   const { roomCode } = useParams();
@@ -36,6 +37,7 @@ export default function RoomPage() {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected'>('connected');
   const router = useRouter();
   const prevSlideIndex = useRef<number | null>(null);
+  const [quizTitle, setQuizTitle] = useState('');
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -121,6 +123,17 @@ export default function RoomPage() {
               }
             }
           }
+        }
+
+        // 4. Fetch quiz title
+        const { data: quizData } = await supabase
+          .from('quizzes')
+          .select('title')
+          .eq('id', roomData.quiz_id)
+          .single();
+        
+        if (quizData) {
+          setQuizTitle(quizData.title);
         }
 
       } catch (err) {
@@ -383,15 +396,20 @@ export default function RoomPage() {
   // Waiting for quiz to start
   if (!room.has_started) {
     return (
-      <div className="text-black p-4 text-center">
-        <h2 className="text-xl mb-2">Waiting for the host to start the quiz.</h2>
-        <p className="text-lg text-white font-mono bg-gray-800 p-2 inline-block rounded">
-          Room: {room.room_code}
-        </p>
-        {slides.length === 0 && (
-          <p className="mt-4 text-gray-400">Loading questions...</p>
-        )}
-      </div>
+      <PlayerLayout title={quizTitle ? `QuizMe - ${quizTitle}` : 'QuizMe'}>
+        <div className="text-black p-5 pt-10 text-center">
+          {quizTitle && (
+            <h2 className="text-xl font-semibold mb-6">Welcome {playerName} to the quiz: {quizTitle}!</h2>
+          )}
+          <p className="text-lg font-semibold text-black p-4">
+            Room code: {room.room_code}
+          </p>
+          <h2 className="text-lg pt-10">Get ready. The quiz will start shortly.</h2>
+          {slides.length === 0 && (
+            <p className="mt-4 text-gray-400">Loading questions...</p>
+          )}
+        </div>
+      </PlayerLayout>
     );
   }
 
@@ -418,11 +436,12 @@ export default function RoomPage() {
 
   // Main quiz interface
   return (
-    <div className="min-h-screen bg-black text-white">
+    <PlayerLayout title={quizTitle ? `QuizMe - ${quizTitle}` : 'QuizMe'}>
+    <div className="min-h-screen text-black">
       <div className="p-4 max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold">Room: {room.room_code}</h1>
-          <span className="bg-gray-800 px-3 py-1 rounded">
+          <span className="px-3 py-1 rounded">
             Slide {room.current_slide_index + 1} of {slides.length}
           </span>
         </div>
@@ -528,5 +547,6 @@ export default function RoomPage() {
         </div>
       </div>
     </div>
+    </PlayerLayout>
   );
 }

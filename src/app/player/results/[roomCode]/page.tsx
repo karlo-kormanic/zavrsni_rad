@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Slide, PlayerResponse, Room } from '@/../../types';
 import Scoreboard from '@/components/Scoreboard';
 import { calculateScores } from '@/lib/calculateScores';
+import PlayerLayout from '@/components/PlayerLayout';
 
 export default function PlayerResultsPage() {
   const { roomCode } = useParams();
@@ -16,6 +17,7 @@ export default function PlayerResultsPage() {
   const [loading, setLoading] = useState(true);
   const [playerName, setPlayerName] = useState<string | null>(null);
   const [winnerInfoSubmitted, setWinnerInfoSubmitted] = useState(false);
+  const [quizTitle, setQuizTitle] = useState('');
   const [winnerInfo, setWinnerInfo] = useState({
     firstName: '',
     lastName: '',
@@ -47,6 +49,16 @@ export default function PlayerResultsPage() {
       }
 
       setRoom(roomData);
+
+      const { data: quizData } = await supabase
+        .from('quizzes')
+        .select('title')
+        .eq('id', roomData.quiz_id)
+        .single();
+
+      if (quizData) {
+        setQuizTitle(quizData.title);
+      }
 
       const { data: slidesData, error: slidesError } = await supabase
         .from('slides')
@@ -117,6 +129,7 @@ export default function PlayerResultsPage() {
   const showWinnerForm = won && !winnerInfoSubmitted;
 
   return (
+    <PlayerLayout title={quizTitle ? `QuizMe - ${quizTitle}` : 'QuizMe'}>
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-center text-black mb-6">Final Results</h1>
       
@@ -194,5 +207,6 @@ export default function PlayerResultsPage() {
         </div>
       )}
     </div>
+    </PlayerLayout>
   );
 }

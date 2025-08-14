@@ -1,6 +1,7 @@
 'use client'
 import { ReactNode } from 'react'
 import UserMenu from '@/components/UserMenu'
+import Link from 'next/link'
 
 export default function HostLayout({ children }: { children: ReactNode }) {
   return (
@@ -8,7 +9,9 @@ export default function HostLayout({ children }: { children: ReactNode }) {
       {/* Navigation Bar */}
       <header className="bg-white shadow-sm">
         <div className="container mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
-          <h1 className="text-xl font-bold font-medium">QuizMe</h1>
+          <Link href="/host/dashboard" className="text-xl font-bold font-medium hover:text-blue-600 transition-colors">
+            QuizMe
+          </Link>
           <UserMenu />
         </div>
       </header>
