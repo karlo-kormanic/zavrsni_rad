@@ -453,6 +453,7 @@ export default function RoomPage() {
               key={`countdown-${room.current_slide_index}`}
               duration={room.slide_duration}
               active={room.auto_advance}
+              slideIndex={room.current_slide_index}
             />
           )}
 

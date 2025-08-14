@@ -1,34 +1,62 @@
-// components/CountdownBar.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 interface CountdownBarProps {
   duration: number;
-  onComplete?: () => void;
   active: boolean;
+  onComplete?: () => void;
+  slideIndex: number;
 }
 
-export default function CountdownBar({ duration, onComplete, active }: CountdownBarProps) {
+export default function CountdownBar({ 
+  duration, 
+  active, 
+  onComplete,
+  slideIndex
+}: CountdownBarProps) {
   const [remaining, setRemaining] = useState(duration);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const endTimeRef = useRef<number>(Date.now() + duration * 1000);
+
+  // Memoize the timer callback
+  const timerCallback = useCallback(() => {
+    if (!endTimeRef.current) return;
+    
+    const now = Date.now();
+    const newRemaining = Math.max(0, Math.ceil((endTimeRef.current - now) / 1000));
+    
+    setRemaining(newRemaining);
+
+    if (newRemaining <= 0) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      onComplete?.();
+    }
+  }, [onComplete]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
 
+    // Reset timer references
+    endTimeRef.current = Date.now() + duration * 1000;
     setRemaining(duration);
-    const interval = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setTimeout(() => onComplete?.(), 0);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
 
-    return () => clearInterval(interval);
-  }, [duration, active, onComplete]);
+    // Start new interval
+    timerRef.current = setInterval(timerCallback, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [active, duration, slideIndex, timerCallback]);
 
   if (!active) return null;
 

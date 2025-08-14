@@ -252,7 +252,7 @@ const changeSlide = useCallback(async (delta: number) => {
       }
     };
   }, [room?.auto_advance, room?.has_started, room?.current_slide_index, room?.slide_duration, changeSlide, calculateScoresAndShow, slides.length]);
-
+  
   const handleStartQuiz = async () => {
     if (!room) return;
 
@@ -433,10 +433,12 @@ const changeSlide = useCallback(async (delta: number) => {
                       )}
                       {room.auto_advance && room.has_started && room.current_slide_index !== -1 && (
                         <div className="mt-3">
-                          <CountdownBar 
+                          <CountdownBar
+                            key={`countdown-${room.current_slide_index}`}
                             duration={room.slide_duration}
                             active={room.auto_advance}
                             onComplete={room.current_slide_index < slides.length - 1 ? changeSlide.bind(null, 1) : undefined}
+                            slideIndex={room.current_slide_index}
                           />
                         </div>
                       )}
