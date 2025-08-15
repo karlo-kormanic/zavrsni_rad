@@ -146,7 +146,7 @@ export default function QuizDashboard() {
             type="text"
             value={newQuizTitle}
             onChange={(e) => setNewQuizTitle(e.target.value)}
-            placeholder="Quiz set title"
+            placeholder="Quiz title"
             className="flex-1 px-3 py-2 border rounded"
           />
           <button
