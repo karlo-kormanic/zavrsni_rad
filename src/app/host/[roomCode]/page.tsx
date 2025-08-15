@@ -423,7 +423,12 @@ const changeSlide = useCallback(async (delta: number) => {
                       {room.auto_advance && (
                         <select
                           value={room.slide_duration}
-                          onChange={(e) => updateSlideDuration(parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const newValue = parseInt(e.target.value);
+                            if (newValue !== room.slide_duration) { // ✅ only update if different
+                              updateSlideDuration(newValue);
+                            }
+                          }}
                           className="border rounded px-2 py-1 text-sm"
                         >
                           {[15, 30, 45, 60].map((sec) => (

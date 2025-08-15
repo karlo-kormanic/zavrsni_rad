@@ -18,8 +18,9 @@ export default function CountdownBar({
   const [remaining, setRemaining] = useState(duration);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const endTimeRef = useRef<number>(Date.now() + duration * 1000);
+  const prevSlideRef = useRef<number>(slideIndex);
+  const prevDurationRef = useRef<number>(duration);
 
-  // Memoize the timer callback
   const timerCallback = useCallback(() => {
     if (!endTimeRef.current) return;
     
@@ -44,8 +45,12 @@ export default function CountdownBar({
     }
 
     // Reset timer references
-    endTimeRef.current = Date.now() + duration * 1000;
-    setRemaining(duration);
+    if (slideIndex !== prevSlideRef.current || duration !== prevDurationRef.current) {
+      prevSlideRef.current = slideIndex;
+      prevDurationRef.current = duration;
+      endTimeRef.current = Date.now() + duration * 1000;
+      setRemaining(duration);
+    }
 
     // Start new interval
     timerRef.current = setInterval(timerCallback, 1000);
