@@ -407,7 +407,7 @@ const changeSlide = useCallback(async (delta: number) => {
               <div className="bg-white p-6 rounded shadow mb-4 w-130 max-w-xl">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-700 text-sm">
-                    Slide {room.current_slide_index + 1} of {slides.length}
+                    Question {room.current_slide_index + 1} of {slides.length}
                   </span>
                   {room.has_started && (
                     <div className="flex items-center gap-2">
