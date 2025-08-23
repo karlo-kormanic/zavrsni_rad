@@ -350,12 +350,12 @@ const changeSlide = useCallback(async (delta: number) => {
                 checked={autoAdvance}
                 onChange={(e) => setAutoAdvance(e.target.checked)}
               />
-              <label htmlFor="autoAdvance">Auto-advance slides</label>
+              <label htmlFor="autoAdvance">Auto-advance questions</label>
             </div>
             
             {autoAdvance && (
               <div>
-                <label className="block font-medium mb-2 p">Seconds per slide</label>
+                <label className="block font-medium mb-2 p">Seconds per question</label>
                 <input
                   type="number"
                   min="5"
