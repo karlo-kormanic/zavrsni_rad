@@ -107,6 +107,13 @@ export default function QuizDashboard() {
 
       if (slidesError) throw slidesError
 
+      const { error: roomsError } = await supabase
+        .from('rooms')
+        .delete()
+        .eq('quiz_id', quizId)
+      
+      if (roomsError) throw roomsError
+
       // Then delete the quiz
       const { error: quizError } = await supabase
         .from('quizzes')
