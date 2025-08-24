@@ -442,7 +442,7 @@ export default function RoomPage() {
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold">Room: {room.room_code}</h1>
           <span className="px-3 py-1 rounded">
-            Slide {room.current_slide_index + 1} of {slides.length}
+            Question {room.current_slide_index + 1} of {slides.length}
           </span>
         </div>
 
