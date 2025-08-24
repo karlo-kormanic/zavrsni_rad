@@ -38,13 +38,13 @@ export default function JoinRoomPage() {
         onSubmit={handleJoinRoom}
         className="bg-white p-8 rounded shadow-md max-w-md w-full space-y-6"
       >
-        <h2 className="text-2xl text-black font-semibold text-center">Join a Quiz Room</h2>
+        <h2 className="text-2xl text-black font-semibold text-center">Join the Quiz</h2>
 
         <input
           type="text"
           value={roomCode}
           onChange={(e) => setRoomCode(e.target.value)}
-          placeholder="Enter Room Code"
+          placeholder="Enter a Quiz Room Code"
           className="w-full px-4 py-2 border text text-black border-gray-300 rounded-md uppercase"
           required
         />
