@@ -38,7 +38,7 @@ export default function JoinRoomPage() {
         onSubmit={handleJoinRoom}
         className="bg-white p-8 rounded shadow-md max-w-md w-full space-y-6"
       >
-        <h2 className="text-2xl text-black font-semibold text-center">Join a Room</h2>
+        <h2 className="text-2xl text-black font-semibold text-center">Join a Quiz Room</h2>
 
         <input
           type="text"
