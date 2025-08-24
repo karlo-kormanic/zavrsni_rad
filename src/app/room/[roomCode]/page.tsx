@@ -437,7 +437,7 @@ export default function RoomPage() {
   // Main quiz interface
   return (
     <PlayerLayout title={quizTitle ? `QuizMe - ${quizTitle}` : 'QuizMe'}>
-    <div className="min-h-screen text-black">
+    <div className="h-screen text-black">
       <div className="p-4 max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold">Room: {room.room_code}</h1>
