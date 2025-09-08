@@ -17,8 +17,8 @@ export interface Slide {
     options: string[];
     answer: string | string[] | number | number[];
     note?: string;
-    quiz_id: string;  // Required foreign key
-    host_id: string;  // Required owner reference
+    quiz_id: string;
+    host_id: string;
     created_at?: string;
 }
 
@@ -28,9 +28,9 @@ export type State = {
 };
 
 export type Action =
-  | { type: 'ADD_SLIDE'; payload: Slide }  // Changed - now includes full slide
+  | { type: 'ADD_SLIDE'; payload: Slide }
   | { type: 'SET_ACTIVE_SLIDE'; id: number }
-  | { type: 'UPDATE_SLIDE'; id: number; payload: Partial<Omit<Slide, 'quiz_id' | 'host_id'>> }  // More precise payload
+  | { type: 'UPDATE_SLIDE'; id: number; payload: Partial<Omit<Slide, 'quiz_id' | 'host_id'>> }
   | { type: 'DELETE_SLIDE'; id: number }
   | { type: 'SET_INITIAL_SLIDES'; payload: Slide[] }
 

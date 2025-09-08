@@ -15,7 +15,7 @@ export default function LoginPage() {
   }, [user, isLoading, router])
 
   if (isLoading || user) {
-    return null // or return a loading spinner
+    return null
   }
 
   return (
