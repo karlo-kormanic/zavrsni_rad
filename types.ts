@@ -10,7 +10,7 @@ export type Quiz = {
   slides_count?: number;
 };
 
-export interface Slide {
+export type Slide = {
     id: number;
     question?: string;
     questionType: string;
