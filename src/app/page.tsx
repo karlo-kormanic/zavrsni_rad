@@ -21,7 +21,7 @@ export default function HomePage() {
           <p className="text-gray-600 mb-8">Engage with our fun and interactive quizzes</p>
           
           <div className="space-y-4">
-            {/* Host Section */}
+
             <div className="border rounded-lg p-6 hover:bg-gray-50 transition">
               <h2 className="text-xl font-semibold mb-3">Host a Quiz</h2>
               <p className="text-gray-600 mb-4">Create and manage your quizzes</p>
@@ -33,7 +33,6 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Player Section */}
             <div className="border rounded-lg p-6 hover:bg-gray-50 transition">
               <h2 className="text-xl font-semibold mb-3">Join a Quiz</h2>
               <p className="text-gray-600 mb-4">Enter a room code to play</p>

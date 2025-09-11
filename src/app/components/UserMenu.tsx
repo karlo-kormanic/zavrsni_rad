@@ -18,7 +18,6 @@ export default function UserMenu() {
         router.refresh()
       } else {
         console.error('Sign out error:', error)
-        // Optionally show error toast: toast.error('Sign out failed')
       }
     } finally {
       setIsSigningOut(false)

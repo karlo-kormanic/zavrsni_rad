@@ -66,7 +66,7 @@ export function AnswerEditor({
   };
 
   const removeOption = (index: number) => {
-    if (initialOptions.length <= 1) return; // Keep at least one option
+    if (initialOptions.length <= 1) return;
     const updated = [...initialOptions];
     updated.splice(index, 1);
     onUpdate(updated);

@@ -24,7 +24,6 @@ export default function PlayerResultsPage() {
     email: ''
   });
 
-  // Load player name from localStorage
   useEffect(() => {
     const storedName = localStorage.getItem('player_name');
     if (storedName) {

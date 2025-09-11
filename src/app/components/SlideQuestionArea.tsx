@@ -82,7 +82,7 @@ const SlideQuestionArea = ({ slide, onUpdate }: SlideQuestionAreaProps) => {
                 }
                 onSelect={(value) => {
                   if (slide.questionType === 'checkbox') {
-                    onUpdate({ answer: value as number[] }); // indices
+                    onUpdate({ answer: value as number[] });
                   } else if (slide.questionType === 'multiple_choice') {
                     onUpdate({ answer: value as number });
                   }
@@ -92,11 +92,11 @@ const SlideQuestionArea = ({ slide, onUpdate }: SlideQuestionAreaProps) => {
                   Array.isArray(slide.answer) &&
                   slide.answer.every((a) => typeof a === 'number')
                     ? slide.answer as number[]
-                    : slide.options.map((_, index) => index) // fallback: original order
+                    : slide.options.map((_, index) => index)
                 }
                 setAnswerOrder={(newOrder) => {
                   if (slide.questionType === 'scale') {
-                    onUpdate({ answer: newOrder }); // store order as array of indices
+                    onUpdate({ answer: newOrder });
                   }
                 }}
               />

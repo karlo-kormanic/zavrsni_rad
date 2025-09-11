@@ -5,16 +5,15 @@ interface ScoreboardProps {
   scores: Record<string, number>;
   isPlayerView?: boolean;
   currentPlayer?: string | null;
-  winnerCount?: number;  // Add this line to include winnerCount in the props
+  winnerCount?: number;
 }
 
 const Scoreboard: React.FC<ScoreboardProps> = ({ 
   scores, 
   isPlayerView = false, 
   currentPlayer = null,
-  winnerCount = 1  // Default value if not provided
+  winnerCount = 1
 }) => {
-  // Convert scores object to array and sort by score (descending)
   const sortedScores = Object.entries(scores)
     .map(([name, score]) => ({ name, score }))
     .sort((a, b) => b.score - a.score);

@@ -6,21 +6,21 @@ import { Session, User, AuthError } from '@supabase/supabase-js'
 type AuthContextType = {
   session: Session | null
   user: User | null
-  isLoading: boolean // Add loading state
+  isLoading: boolean
   signOut: () => Promise<AuthError | null>
 }
 
 const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
-  isLoading: true, // Initial loading state
+  isLoading: true,
   signOut: async () => null,
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true) // Track loading state
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let mounted = true

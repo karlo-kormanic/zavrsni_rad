@@ -22,11 +22,11 @@ export default function ProtectedRoute({
   }, [user, isLoading, router])
 
   if (isLoading || isChecking) {
-    return null // or return a loading spinner
+    return null
   }
 
   if (!user) {
-    return null // Redirect will happen from useEffect
+    return null
   }
 
   return <>{children}</>

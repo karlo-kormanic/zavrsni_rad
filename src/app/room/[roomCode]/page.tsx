@@ -41,7 +41,6 @@ export default function RoomPage() {
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  // Load player name from localStorage
   useEffect(() => {
     const storedName = localStorage.getItem('player_name');
     if (storedName) {
@@ -49,7 +48,6 @@ export default function RoomPage() {
     }
   }, []);
 
-  // Connection monitoring
   useEffect(() => {
     const channel = supabase.channel('connection-status')
       .on('presence', { event: 'sync' }, () => {
@@ -69,7 +67,6 @@ export default function RoomPage() {
     };
   }, []);
 
-  // Initial data fetch with retry logic
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -147,7 +144,6 @@ export default function RoomPage() {
     fetchData();
   }, [roomCode, playerName]);
 
-  // Real-time updates
   useEffect(() => {
     if (!room?.id) return;
 
@@ -164,7 +160,6 @@ export default function RoomPage() {
         async (payload) => {
           const updatedRoom = payload.new as Room;
           
-          // Reset submission state when slide changes
           if (prevSlideIndex.current !== updatedRoom.current_slide_index) {
             setSubmitted(false);
             prevSlideIndex.current = updatedRoom.current_slide_index;
@@ -172,7 +167,6 @@ export default function RoomPage() {
 
           setRoom(updatedRoom);
 
-          // Handle results redirection
           if (updatedRoom.current_slide_index === -1) {
             router.push(`/player/results/${roomCode}`);
           }
@@ -185,14 +179,12 @@ export default function RoomPage() {
     };
   }, [room?.id, roomCode, router]);
 
-  // Handle slide changes
   useEffect(() => {
     if (room && slides.length > 0 && room.current_slide_index >= slides.length) {
       router.push(`/player/results/${roomCode}`);
     }
   }, [room, slides, roomCode, router]);
 
-  // Fetch player response when slide changes
   useEffect(() => {
     const fetchPlayerResponse = async () => {
       if (!room || !slides.length || !playerName) return;
@@ -297,7 +289,6 @@ export default function RoomPage() {
     );
   }
 
-  // Connection status display
   if (connectionStatus === 'disconnected') {
     return (
       <div className="text-white p-4 text-center">
@@ -306,7 +297,6 @@ export default function RoomPage() {
     );
   }
 
-  // Render loading/error states
   if (loading) {
     return (
       <div className="text-white p-4 text-center">
@@ -341,7 +331,6 @@ export default function RoomPage() {
     );
   }
 
-  // Name input form
   if (!playerName) {
     return (
       <div className="text-black p-4 max-w-md mx-auto">
@@ -393,7 +382,6 @@ export default function RoomPage() {
     );
   }
 
-  // Waiting for quiz to start
   if (!room.has_started) {
     return (
       <PlayerLayout title={quizTitle ? `QuizMe - ${quizTitle}` : 'QuizMe'}>
@@ -413,7 +401,6 @@ export default function RoomPage() {
     );
   }
 
-  // Current slide handling
   const currentSlide = slides[room.current_slide_index];
   if (!currentSlide) {
     return (
@@ -434,7 +421,6 @@ export default function RoomPage() {
 
   const questionType = currentSlide.questionType;
 
-  // Main quiz interface
   return (
     <PlayerLayout title={quizTitle ? `QuizMe - ${quizTitle}` : 'QuizMe'}>
     <div className="text-black">

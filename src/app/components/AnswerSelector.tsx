@@ -20,7 +20,7 @@ interface SelectorProps {
   options: string[];
   selectedAnswer: number | '';
   selectedAnswers: number[];
-  answerOrder?: number[]; // For sortable mode (host slide editor for scale)
+  answerOrder?: number[];
   setAnswerOrder?: (order: number[]) => void;
   onSelect: (value: string | number | number[]) => void;
   isMultiSelect?: boolean;
@@ -81,7 +81,7 @@ export function AnswerSelector({
     if (oldIndex !== newIndex) {
       const newOrder = arrayMove(answerOrder, oldIndex, newIndex);
       setAnswerOrder(newOrder);
-      onSelect(newOrder); // set the answer as an array of indices
+      onSelect(newOrder);
     }
   };
 

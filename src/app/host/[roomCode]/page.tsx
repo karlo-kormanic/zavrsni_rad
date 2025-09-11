@@ -425,7 +425,7 @@ const changeSlide = useCallback(async (delta: number) => {
                           value={room.slide_duration}
                           onChange={(e) => {
                             const newValue = parseInt(e.target.value);
-                            if (newValue !== room.slide_duration) { // ✅ only update if different
+                            if (newValue !== room.slide_duration) {
                               updateSlideDuration(newValue);
                             }
                           }}

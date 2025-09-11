@@ -61,7 +61,6 @@ const SlidePreview = ({
                   : 'hover:bg-gray-200'
               } ${deletingId === slide.id ? 'opacity-50' : ''}`}
             >
-              {/* Question text with 3-line limit */}
               <div 
                 className="pr-6 flex-1 line-clamp-3" 
                 title={slide.question || `Question ${index + 1}`}
@@ -69,7 +68,6 @@ const SlidePreview = ({
                 {slide.question || `Question ${index + 1}`}
               </div>
               
-              {/* Delete button */}
               <button
                 onClick={(e) => handleDelete(e, slide.id)}
                 disabled={deletingId === slide.id}
@@ -96,7 +94,6 @@ const SlidePreview = ({
         </ul>
       )}
 
-      {/* Add Slide button at the bottom */}
       <button
         onClick={onAddSlide}
         className="w-full bg-blue-500 text-white px-3 py-2 mt-4 rounded hover:bg-blue-600 transition disabled:opacity-50"

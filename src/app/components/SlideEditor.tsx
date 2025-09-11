@@ -23,7 +23,6 @@ const SlideEditor = ({ quizId }: SlideEditorProps) => {
         activeSlideId: null,
     });
 
-    // 1. Check authentication first
     useEffect(() => {
         const checkAuth = async () => {
             const { data: { user }, error } = await supabase.auth.getUser();
@@ -39,13 +38,11 @@ const SlideEditor = ({ quizId }: SlideEditorProps) => {
         checkAuth();
     }, [router]);
 
-    // 2. Load data after auth is confirmed
     useEffect(() => {
         if (!authChecked) return;
 
         const loadAllData = async () => {
             try {
-                // Fetch quiz title and slides in parallel
                 const [{ data: quizData }, slides] = await Promise.all([
                     supabase
                         .from('quizzes')

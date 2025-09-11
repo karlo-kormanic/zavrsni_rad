@@ -12,7 +12,6 @@ export default function QuizDashboard() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const router = useRouter()
 
-  // Fetch quizzes with slide counts
   useEffect(() => {
     const fetchQuizzes = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -76,7 +75,6 @@ export default function QuizDashboard() {
     if (error) {
       console.error('Error creating quiz:', error)
     } else {
-      // Create default first slide
       const { error: slideError } = await supabase
         .from('slides')
         .insert({
@@ -99,7 +97,6 @@ export default function QuizDashboard() {
   const deleteQuiz = async (quizId: string) => {
     setDeletingId(quizId)
     try {
-      // First delete all slides (due to foreign key constraints)
       const { error: slidesError } = await supabase
         .from('slides')
         .delete()
@@ -114,7 +111,6 @@ export default function QuizDashboard() {
       
       if (roomsError) throw roomsError
 
-      // Then delete the quiz
       const { error: quizError } = await supabase
         .from('quizzes')
         .delete()
@@ -122,7 +118,6 @@ export default function QuizDashboard() {
 
       if (quizError) throw quizError
 
-      // Update local state
       setQuizzes(quizzes.filter(q => q.id !== quizId))
     } catch (error) {
       console.error('Error deleting quiz:', error)
@@ -144,8 +139,6 @@ export default function QuizDashboard() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Your Quizzes</h1>
-      
-      {/* Create New Quiz */}
       <div className="mb-8 p-4 bg-gray-50 rounded-lg">
         <h2 className="text-lg font-semibold mb-2">Create a new quiz:</h2>
         <div className="flex gap-2">
@@ -165,8 +158,6 @@ export default function QuizDashboard() {
           </button>
         </div>
       </div>
-
-      {/* Quizzes List */}
       <div className="space-y-4">
         {quizzes.length === 0 ? (
           <p className="text-gray-500">No quizzes found. Create your first one!</p>
@@ -188,8 +179,7 @@ export default function QuizDashboard() {
                   {new Date(quiz.created_at).toLocaleDateString()}
                 </span>
               </div>
-              
-              {/* Delete button */}
+            
               <button
                 onClick={(e) => handleDelete(e, quiz.id)}
                 disabled={deletingId === quiz.id}
