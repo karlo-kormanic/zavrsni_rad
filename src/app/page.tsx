@@ -15,7 +15,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-xl shadow-lg overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="p-8 text-center">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">QuizMe</h1>
           <p className="text-gray-600 mb-8">Engage with our fun and interactive quizzes</p>
