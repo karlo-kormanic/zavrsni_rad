@@ -2,14 +2,21 @@
 
 QuizMe is a web-application for creating, running and playing in quizes.
 
-[Homepage]: https://github.com/karlo-kormanic/zavrsni_rad/tree/master/src/app/images/home.png "Homepage"
+![Homepage](src/app/images/home.png "Homepage")
 
-[Quiz Editor]: https://github.com/karlo-kormanic/zavrsni_rad/tree/master/src/app/images/quizEditor.png "Quiz Editor"
+Quiz hosts can login via google account and create a new quiz, edit their existing quiz and run them. Quiz players can join a quiz via unique quiz room code or by scanning the QR code. Both codes are provided by host when starting a new quiz.
 
-[Playing in the quiz]: https://github.com/karlo-kormanic/zavrsni_rad/tree/master/src/app/images/quizPlaying.png "Playing in the quiz"
+![Quiz Editor](src/app/images/quizEditor.png "Quiz Editor")
 
-[Leaderboard]: https://github.com/karlo-kormanic/zavrsni_rad/tree/master/src/app/images/scoreboard.png "Leaderboard"
+Host can edit a quiz title, number of questions, question title, question type (multiple choice, checkbox or scale), potential answers as well as pick correct answer/s.
 
+![Playing in the quiz](src/app/images/quizPlaying.png "Playing in the quiz")
+
+Players can interact with the quiz and submit their answers.
+
+![Leaderboard](src/app/images/scoreboard.png "Leaderboard")
+
+At the end of the quiz host and every player is shown a leaderboard and winning players are prompted to leave their information in order to send them their reward.
 
 ## Built With
 
