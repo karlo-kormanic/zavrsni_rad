@@ -1,6 +1,6 @@
 # QuizMe
 
-QuizMe is a web-application for creating, running and playing in quizes.
+QuizMe is a web-application for creating, running and participating in quizes.
 
 ![Homepage](src/app/images/home.png "Homepage")
 
